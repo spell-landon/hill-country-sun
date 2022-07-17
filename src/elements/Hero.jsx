@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Button } from './Button';
 
 const callToAction =
   'Stay up to date on all things Hill Country by subscribing to our newsletter';
@@ -32,11 +32,7 @@ export const Hero = ({
             <p className='text-white font-light leading-[23px] mt-[6rem]'>
               {ctaText}
             </p>
-            <Link
-              to='/subscribe'
-              className={`bg-primary w-fit px-8 py-2 text-white border border-primary hover:bg-white hover:text-primary font-medium flex justify-center items-center inset-0 tracking-widest text-sm`}>
-              Subscribe
-            </Link>
+            <Button to='/subscribe'>Subscribe</Button>
           </div>
         </div>
       </div>

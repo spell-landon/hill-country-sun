@@ -1,6 +1,7 @@
 import React from 'react';
 import { accentLine } from '../../global/classes';
 import { Hero } from '../../elements/Hero';
+import { NewIssues } from '../../components/NewIssues';
 
 export const Homepage = () => {
   return (
@@ -18,7 +19,8 @@ export const Homepage = () => {
               more that make our beautiful Hill Country a great place to live
               and visit!`}
       />
-      <div>Hello</div>
+      <NewIssues />
+      <div className='h-screen bg-green-300'></div>
     </>
   );
 };

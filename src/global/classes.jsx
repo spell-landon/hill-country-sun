@@ -9,4 +9,4 @@ export const underlineHover = classNames(
   'hover:after:scale-x-100 hover:after:origin-bottom-left'
 );
 export const accentLine =
-  'inline-block relative after:absolute after:w-1/2 after:bg-primary after:scale-x-100 after:h-[4px] after:bottom-0 after:left-1/2 after:-translate-x-1/2';
+  'inline-block relative after:absolute after:w-1/2 after:bg-primary after:scale-x-100 after:h-[4px] after:-bottom-1 after:left-1/2 after:-translate-x-1/2';
