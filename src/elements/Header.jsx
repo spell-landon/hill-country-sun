@@ -48,7 +48,7 @@ export const Header = () => {
           className={`bg-primary h-full px-2 sm:px-8 text-white border border-primary hover:bg-white hover:text-primary font-medium flex justify-center items-center inset-0 tracking-widest text-sm`}>
           Subscribe
         </button>
-        <MobileMenu />
+        <MobileMenu pathname={pathname} />
       </div>
     </div>
   );
