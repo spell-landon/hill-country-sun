@@ -4,14 +4,14 @@ import { Container } from "~/components/ui/Container";
 
 const footerLinks = {
   explore: [
-    { label: "Magazine", href: "/magazine" },
+    { label: "Hill Country Sun", href: "/publications/hill-country-sun" },
     { label: "Articles", href: "/articles" },
     { label: "Calendar", href: "/calendar" },
   ],
-  guides: [
-    { label: "Welcome to Wimberley", href: "/welcome-to-wimberley" },
-    { label: "River Region Guide", href: "/river-region-guide" },
-    { label: "Hunting Guide", href: "/hunting-guide" },
+  publications: [
+    { label: "Welcome to Wimberley", href: "/publications/welcome-to-wimberley" },
+    { label: "River Region Guide", href: "/publications/river-region-guide" },
+    { label: "Hunting Guide", href: "/publications/hunting-guide" },
   ],
   company: [
     { label: "About Us", href: "/about" },
@@ -85,13 +85,13 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Guides Links */}
+          {/* Publications Links */}
           <div>
             <h3 className="font-serif font-bold text-base sm:text-lg text-white mb-3 sm:mb-4">
-              Guides
+              Publications
             </h3>
             <ul className="space-y-2">
-              {footerLinks.guides.map((link) => (
+              {footerLinks.publications.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}

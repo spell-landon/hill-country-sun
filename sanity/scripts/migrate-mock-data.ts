@@ -16,11 +16,11 @@ import {
   mockArticles,
   mockIssues,
   mockEvents,
-  mockGuides,
+  mockPublications,
   type Article,
   type MagazineIssue,
   type Event,
-  type Guide,
+  type Publication,
 } from "../../app/lib/mock-data.js";
 
 // Sanity configuration
@@ -317,65 +317,66 @@ async function migrateEvents(): Promise<void> {
   }
 }
 
-async function migrateGuides(): Promise<void> {
-  console.log("\n🗺️  Migrating Guides...");
+async function migratePublications(): Promise<void> {
+  console.log("\n📚  Migrating Publications...");
 
-  const guides = Object.values(mockGuides);
-
-  for (const guide of guides) {
+  for (const publication of mockPublications) {
     // Check if already exists
-    const existingId = await documentExists("guide", guide.slug);
+    const existingId = await documentExists("publication", publication.slug);
     if (existingId) {
-      console.log(`  ⏭️  Skipping (exists): ${guide.title}`);
+      console.log(`  ⏭️  Skipping (exists): ${publication.name}`);
       continue;
     }
 
-    console.log(`  📍 Processing: ${guide.title}`);
+    console.log(`  📍 Processing: ${publication.name}`);
 
     // Upload hero image
     const heroImage = await uploadImageFromUrl(
-      guide.heroImage,
-      `guide-${guide.slug}-hero.jpg`
+      publication.heroImage,
+      `publication-${publication.slug}-hero.jpg`
     );
 
-    // Process sections
+    // Process sections if they exist
     const sections = [];
-    for (let i = 0; i < guide.sections.length; i++) {
-      const section = guide.sections[i];
-      let sectionImage = null;
+    if (publication.sections) {
+      for (let i = 0; i < publication.sections.length; i++) {
+        const section = publication.sections[i];
+        let sectionImage = null;
 
-      if (section.image) {
-        sectionImage = await uploadImageFromUrl(
-          section.image,
-          `guide-${guide.slug}-section-${i}.jpg`
-        );
+        if (section.image) {
+          sectionImage = await uploadImageFromUrl(
+            section.image,
+            `publication-${publication.slug}-section-${i}.jpg`
+          );
+        }
+
+        sections.push({
+          _type: "publicationSection",
+          _key: `section-${i}`,
+          title: section.title,
+          content: section.content,
+          image: sectionImage,
+        });
       }
-
-      sections.push({
-        _type: "guideSection",
-        _key: `section-${i}`,
-        title: section.title,
-        content: section.content,
-        image: sectionImage,
-      });
     }
 
     const doc = {
-      _type: "guide",
-      title: guide.title,
-      slug: { _type: "slug", current: guide.slug },
+      _type: "publication",
+      name: publication.name,
+      shortName: publication.shortName,
+      slug: { _type: "slug", current: publication.slug },
+      description: publication.description,
       heroImage: heroImage
         ? {
             ...heroImage,
-            alt: guide.title,
+            alt: publication.name,
           }
         : undefined,
-      intro: guide.intro,
       sections,
     };
 
     const result = await client.create(doc);
-    console.log(`  ✅ Created: ${guide.title} (${result._id})`);
+    console.log(`  ✅ Created: ${publication.name} (${result._id})`);
   }
 }
 
@@ -395,7 +396,7 @@ async function main() {
     await migrateArticles();
     await migrateIssues();
     await migrateEvents();
-    await migrateGuides();
+    await migratePublications();
 
     console.log("\n✅ Migration complete!");
     console.log("\nSummary:");
@@ -404,7 +405,7 @@ async function main() {
     console.log(`  - Articles: ${mockArticles.length}`);
     console.log(`  - Issues: ${mockIssues.length}`);
     console.log(`  - Events: ${mockEvents.length}`);
-    console.log(`  - Guides: ${Object.keys(mockGuides).length}`);
+    console.log(`  - Publications: ${mockPublications.length}`);
   } catch (error) {
     console.error("\n❌ Migration failed:", error);
     process.exit(1);

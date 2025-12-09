@@ -11,7 +11,7 @@ const guides = [
     title: "Welcome to Wimberley",
     description:
       "Discover the charm of this Hill Country village. Find things to do, places to eat, and local tips.",
-    href: "/welcome-to-wimberley",
+    href: "/publications/welcome-to-wimberley",
     icon: MapPin,
     image:
       "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&q=80",
@@ -20,7 +20,7 @@ const guides = [
     title: "River Region Guide",
     description:
       "Explore the best swimming holes, water activities, and riverside adventures in the area.",
-    href: "/river-region-guide",
+    href: "/publications/river-region-guide",
     icon: Fish,
     image:
       "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=600&q=80",
@@ -29,7 +29,7 @@ const guides = [
     title: "Hunting Guide",
     description:
       "Everything you need to know about hunting seasons, regulations, and ranches in the Hill Country.",
-    href: "/hunting-guide",
+    href: "/publications/hunting-guide",
     icon: Target,
     image:
       "https://images.unsplash.com/photo-1516655855035-d5215bcb5604?w=600&q=80",

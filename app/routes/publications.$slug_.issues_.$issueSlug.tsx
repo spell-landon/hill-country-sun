@@ -6,44 +6,62 @@ import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { IssuuEmbed } from "~/components/magazine/IssuuEmbed";
 import { IssueCard } from "~/components/magazine/IssueCard";
-import { mockIssues } from "~/lib/mock-data";
+import {
+  getPublicationBySlug,
+  getIssueBySlug,
+  getIssuesByPublication,
+} from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
-  const { slug } = params;
-  const issue = mockIssues.find((i) => i.slug === slug);
+  const { slug, issueSlug } = params;
 
-  if (!issue) {
+  if (!slug || !issueSlug) {
+    throw new Response("Publication and issue slugs required", { status: 400 });
+  }
+
+  const publication = getPublicationBySlug(slug);
+
+  if (!publication) {
+    throw new Response("Publication not found", { status: 404 });
+  }
+
+  const issue = getIssueBySlug(issueSlug);
+
+  if (!issue || issue.publicationSlug !== slug) {
     throw new Response("Issue not found", { status: 404 });
   }
 
-  // Get related issues (other issues, excluding current)
-  const relatedIssues = mockIssues
+  // Get related issues (other issues from same publication, excluding current)
+  const relatedIssues = getIssuesByPublication(slug)
     .filter((i) => i.id !== issue.id)
     .slice(0, 3);
 
-  return json({ issue, relatedIssues });
+  return json({ publication, issue, relatedIssues });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  if (!data?.issue) {
+  if (!data?.issue || !data?.publication) {
     return [{ title: "Issue Not Found | Hill Country Sun" }];
   }
 
   return [
-    { title: `${data.issue.title} | Hill Country Sun Magazine` },
+    { title: `${data.issue.title} | ${data.publication.name}` },
     {
       name: "description",
-      content: `Read the ${data.issue.title} issue of Hill Country Sun magazine. Featuring stories and events from Wimberley and the River Region.`,
+      content: `Read the ${data.issue.title} issue of ${data.publication.name}. Featuring stories and events from the Hill Country community.`,
     },
-    { property: "og:title", content: `${data.issue.title} | Hill Country Sun` },
+    {
+      property: "og:title",
+      content: `${data.issue.title} | ${data.publication.name}`,
+    },
     { property: "og:image", content: data.issue.coverImage },
     { property: "og:type", content: "article" },
   ];
 };
 
-export default function MagazineIssue() {
-  const { issue, relatedIssues } = useLoaderData<typeof loader>();
+export default function PublicationIssueDetail() {
+  const { publication, issue, relatedIssues } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -51,16 +69,22 @@ export default function MagazineIssue() {
       <section className="bg-surface py-8 border-b border-surface">
         <Container size="wide">
           <Link
-            to="/magazine"
+            to={`/publications/${publication.slug}/issues`}
             className="inline-flex items-center text-text-muted hover:text-primary transition-colors mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
-            Back to Magazine Archive
+            Back to {publication.name} Archive
           </Link>
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
+                <Link
+                  to={`/publications/${publication.slug}`}
+                  className="text-secondary text-body-sm font-semibold hover:underline"
+                >
+                  {publication.name}
+                </Link>
                 {issue.isCurrent && (
                   <span className="bg-secondary text-primary text-body-sm font-semibold px-3 py-1 rounded-full">
                     Current Issue
@@ -84,7 +108,7 @@ export default function MagazineIssue() {
               onClick={() => {
                 if (navigator.share) {
                   navigator.share({
-                    title: `${issue.title} - Hill Country Sun`,
+                    title: `${issue.title} - ${publication.name}`,
                     url: window.location.href,
                   });
                 }
@@ -112,14 +136,22 @@ export default function MagazineIssue() {
               <h2 className="font-serif font-bold text-heading-lg text-primary">
                 More Issues
               </h2>
-              <Button to="/magazine" variant="ghost" size="sm">
+              <Button
+                to={`/publications/${publication.slug}/issues`}
+                variant="ghost"
+                size="sm"
+              >
                 View All
               </Button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               {relatedIssues.map((relatedIssue) => (
-                <IssueCard key={relatedIssue.id} issue={relatedIssue} />
+                <IssueCard
+                  key={relatedIssue.id}
+                  issue={relatedIssue}
+                  publicationSlug={publication.slug}
+                />
               ))}
             </div>
           </Container>

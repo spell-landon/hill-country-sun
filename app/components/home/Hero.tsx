@@ -89,11 +89,11 @@ export function Hero({ currentIssueSlug }: HeroProps) {
             transition={{ duration: 0.5 }}
           >
             {currentIssueSlug ? (
-              <Button to={`/magazine/${currentIssueSlug}`} variant="secondary" size="md" className="w-full sm:w-auto">
+              <Button to={`/publications/hill-country-sun/issues/${currentIssueSlug}`} variant="secondary" size="md" className="w-full sm:w-auto">
                 Read Latest Issue
               </Button>
             ) : (
-              <Button to="/magazine" variant="secondary" size="md" className="w-full sm:w-auto">
+              <Button to="/publications/hill-country-sun" variant="secondary" size="md" className="w-full sm:w-auto">
                 Browse Magazine
               </Button>
             )}

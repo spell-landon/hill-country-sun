@@ -22,7 +22,7 @@ export function LatestIssue({ issue }: LatestIssueProps) {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Magazine Cover */}
           <Link
-            to={`/magazine/${issue.slug}`}
+            to={`/publications/hill-country-sun/issues/${issue.slug}`}
             className="group relative block overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow"
           >
             <div className="aspect-[3/4] relative">
@@ -72,11 +72,11 @@ export function LatestIssue({ issue }: LatestIssueProps) {
             </ul>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button to={`/magazine/${issue.slug}`} variant="primary" size="lg">
+              <Button to={`/publications/hill-country-sun/issues/${issue.slug}`} variant="primary" size="lg">
                 Read Now
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </Button>
-              <Button to="/magazine" variant="outline" size="lg">
+              <Button to="/publications/hill-country-sun/issues" variant="outline" size="lg">
                 View All Issues
               </Button>
             </div>

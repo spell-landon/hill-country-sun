@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, BookOpen } from "lucide-react";
 import {
   Card,
   CardImage,
@@ -9,6 +9,7 @@ import {
   CardMeta,
 } from "~/components/ui/Card";
 import type { Article } from "~/lib/mock-data";
+import { getPublicationBySlug } from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
 interface ArticleCardProps {
@@ -25,6 +26,7 @@ function slugify(text: string): string {
 
 export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
   const authorSlug = slugify(article.author.name);
+  const publication = getPublicationBySlug(article.publication);
 
   if (variant === "horizontal") {
     return (
@@ -34,13 +36,22 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           className="flex flex-col sm:flex-row gap-4 md:gap-6"
         >
           <div className="sm:w-48 md:w-64 flex-shrink-0">
-            <div className="aspect-video sm:aspect-[4/3] overflow-hidden rounded-lg">
+            <div className="aspect-video sm:aspect-[4/3] overflow-hidden rounded-lg relative">
               <img
                 src={article.mainImage}
                 alt=""
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
               />
+              {publication && (
+                <Link
+                  to={`/publications/${publication.slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute top-2 left-2 bg-primary/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-primary transition-colors"
+                >
+                  {publication.name}
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex-1 py-1">
@@ -82,7 +93,18 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   return (
     <Card as="article">
       <Link to={`/articles/${article.slug}`} className="block group">
-        <CardImage src={article.mainImage} alt="" aspectRatio="video" />
+        <div className="relative">
+          <CardImage src={article.mainImage} alt="" aspectRatio="video" />
+          {publication && (
+            <Link
+              to={`/publications/${publication.slug}`}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute top-3 left-3 bg-primary/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-primary transition-colors"
+            >
+              {publication.name}
+            </Link>
+          )}
+        </div>
         <CardContent>
           <Link
             to={`/articles?category=${encodeURIComponent(article.category)}`}

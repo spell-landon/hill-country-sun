@@ -6,9 +6,14 @@ import { formatDate } from "~/lib/utils";
 
 interface IssueCardProps {
   issue: MagazineIssue;
+  publicationSlug?: string;
 }
 
-export function IssueCard({ issue }: IssueCardProps) {
+export function IssueCard({ issue, publicationSlug }: IssueCardProps) {
+  // Use the provided publicationSlug or fall back to the issue's publicationSlug
+  const pubSlug = publicationSlug || issue.publicationSlug;
+  const issueUrl = `/publications/${pubSlug}/issues/${issue.slug}`;
+
   return (
     <motion.article
       whileHover={{ y: -8 }}
@@ -16,7 +21,7 @@ export function IssueCard({ issue }: IssueCardProps) {
       className="group"
     >
       <Link
-        to={`/magazine/${issue.slug}`}
+        to={issueUrl}
         className="block"
       >
         <div className="relative aspect-[3/4] overflow-hidden rounded-xl shadow-md group-hover:shadow-xl transition-shadow">

@@ -1,19 +1,22 @@
 import { Link, useLocation } from "@remix-run/react";
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu as MenuIcon, ChevronDown } from "lucide-react";
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { MobileMenu } from "./MobileMenu";
 import { Container } from "~/components/ui/Container";
 
 const navItems = [
-  { label: "Home", href: "/" },
-  { label: "Magazine", href: "/magazine" },
   { label: "Articles", href: "/articles" },
   { label: "Calendar", href: "/calendar" },
-  { label: "Welcome to Wimberley", href: "/welcome-to-wimberley" },
-  { label: "River Region Guide", href: "/river-region-guide" },
-  { label: "Hunting Guide", href: "/hunting-guide" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
+];
+
+const publicationItems = [
+  { label: "Hill Country Sun", href: "/publications/hill-country-sun" },
+  { label: "Welcome to Wimberley", href: "/publications/welcome-to-wimberley" },
+  { label: "River Region Guide", href: "/publications/river-region-guide" },
+  { label: "Hunting Guide", href: "/publications/hunting-guide" },
 ];
 
 export function Header() {
@@ -40,7 +43,7 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            {navItems.slice(0, 7).map((item) => (
+            {navItems.slice(0, 2).map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
@@ -53,6 +56,44 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+
+            {/* Publications Dropdown */}
+            <Menu as="div" className="relative">
+              <MenuButton
+                className={`inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  publicationItems.some((item) => location.pathname.startsWith(item.href))
+                    ? "text-primary bg-gray-100"
+                    : "text-gray-600 hover:text-primary hover:bg-gray-50"
+                }`}
+              >
+                Publications
+                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+              </MenuButton>
+              <MenuItems
+                anchor="bottom start"
+                className="absolute z-50 mt-1 w-56 origin-top-left rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none"
+              >
+                {publicationItems.map((item) => (
+                  <MenuItem key={item.href}>
+                    {({ active }) => (
+                      <Link
+                        to={item.href}
+                        className={`block px-4 py-2 text-sm ${
+                          location.pathname.startsWith(item.href)
+                            ? "text-primary bg-gray-50 font-medium"
+                            : active
+                            ? "text-primary bg-gray-50"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    )}
+                  </MenuItem>
+                ))}
+              </MenuItems>
+            </Menu>
+
             <div className="ml-2 flex items-center gap-2">
               <Link
                 to="/about"
@@ -79,7 +120,7 @@ export function Header() {
             aria-controls="mobile-menu"
             aria-label="Open main menu"
           >
-            <Menu className="h-6 w-6" aria-hidden="true" />
+            <MenuIcon className="h-6 w-6" aria-hidden="true" />
           </button>
         </div>
       </Container>
@@ -89,6 +130,7 @@ export function Header() {
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         navItems={navItems}
+        publicationItems={publicationItems}
         currentPath={location.pathname}
       />
     </header>

@@ -1,6 +1,7 @@
 import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
+import { useState } from "react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from "lucide-react";
@@ -18,14 +19,34 @@ export const meta: MetaFunction = () => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
+  const inquiryType = formData.get("inquiryType");
+  const publications = formData.getAll("publications");
   const name = formData.get("name");
   const email = formData.get("email");
+  const phone = formData.get("phone");
   const subject = formData.get("subject");
   const message = formData.get("message");
 
+  // Event-specific fields
+  const eventName = formData.get("eventName");
+  const eventDate = formData.get("eventDate");
+  const eventLocation = formData.get("eventLocation");
+  const eventWebsite = formData.get("eventWebsite");
+
   // In production, you would send an email or save to database
-  // For now, we'll just simulate a successful submission
-  console.log("Contact form submission:", { name, email, subject, message });
+  console.log("Contact form submission:", {
+    inquiryType,
+    publications,
+    name,
+    email,
+    phone,
+    subject,
+    message,
+    eventName,
+    eventDate,
+    eventLocation,
+    eventWebsite
+  });
 
   // Simulate a delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -58,19 +79,25 @@ const contactInfo = [
   },
 ];
 
-const subjects = [
-  "General Inquiry",
-  "Advertising",
-  "Story Tip",
-  "Event Submission",
-  "Subscription",
-  "Other",
+const inquiryTypes = [
+  { value: "general", label: "General Contact" },
+  { value: "event", label: "Submit Event" },
+  { value: "advertising", label: "Advertising Inquiry" },
+  { value: "other", label: "Other" },
+];
+
+const publications = [
+  { value: "hcs", label: "Hill Country Sun" },
+  { value: "wtw", label: "Welcome to Wimberley" },
+  { value: "rrg", label: "River Region Guide" },
+  { value: "hg", label: "Hunting Guide" },
 ];
 
 export default function Contact() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const [inquiryType, setInquiryType] = useState("general");
 
   return (
     <>
@@ -82,8 +109,8 @@ export default function Contact() {
               Contact Us
             </h1>
             <p className="text-primary-200 text-body-lg">
-              Have a question, story tip, or want to advertise with us? We'd love
-              to hear from you. Fill out the form below or reach us directly.
+              Have a question, story tip, event to submit, or want to advertise with us?
+              We'd love to hear from you.
             </p>
           </div>
         </Container>
@@ -131,21 +158,20 @@ export default function Contact() {
                 })}
               </div>
 
-              {/* Additional Info */}
+              {/* Publications Info */}
               <div className="mt-10 p-6 bg-surface rounded-xl">
                 <h3 className="font-serif font-bold text-heading-sm text-primary mb-3">
-                  Advertising Inquiries
+                  Our Publications
                 </h3>
                 <p className="text-body-sm text-text-muted mb-4">
-                  Interested in reaching Hill Country residents and visitors?
-                  Contact us for advertising rates and media kit.
+                  We publish four regional magazines serving the Hill Country community:
                 </p>
-                <a
-                  href="mailto:advertising@hillcountrysun.com"
-                  className="text-primary font-medium text-body-sm hover:text-primary-600 transition-colors"
-                >
-                  advertising@hillcountrysun.com
-                </a>
+                <ul className="text-body-sm text-text space-y-2">
+                  <li>• Hill Country Sun</li>
+                  <li>• Welcome to Wimberley</li>
+                  <li>• River Region Guide</li>
+                  <li>• Hunting Guide</li>
+                </ul>
               </div>
             </div>
 
@@ -175,6 +201,139 @@ export default function Contact() {
                     </h2>
 
                     <Form method="post" className="space-y-6">
+                      {/* Inquiry Type */}
+                      <div>
+                        <label className="block text-body-sm font-medium text-text mb-3">
+                          What can we help you with? <span className="text-accent">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {inquiryTypes.map((type) => (
+                            <label
+                              key={type.value}
+                              className={`flex items-center justify-center px-4 py-3 rounded-lg border cursor-pointer transition-colors ${
+                                inquiryType === type.value
+                                  ? "bg-primary text-white border-primary"
+                                  : "bg-white text-text border-surface hover:border-primary/30"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="inquiryType"
+                                value={type.value}
+                                checked={inquiryType === type.value}
+                                onChange={(e) => setInquiryType(e.target.value)}
+                                className="sr-only"
+                              />
+                              <span className="text-body-sm font-medium">{type.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Publication Selection */}
+                      <div>
+                        <label className="block text-body-sm font-medium text-text mb-3">
+                          Which publication(s) does this relate to?
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {publications.map((pub) => (
+                            <label
+                              key={pub.value}
+                              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-surface bg-white hover:border-primary/30 cursor-pointer transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                name="publications"
+                                value={pub.value}
+                                className="w-4 h-4 text-primary border-surface rounded focus:ring-primary focus:ring-offset-0"
+                              />
+                              <span className="text-body-sm text-text">{pub.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Event-specific fields */}
+                      {inquiryType === "event" && (
+                        <div className="p-4 bg-surface/50 rounded-lg space-y-4">
+                          <p className="text-body-sm font-medium text-primary">Event Details</p>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <label
+                                htmlFor="eventName"
+                                className="block text-body-sm font-medium text-text mb-2"
+                              >
+                                Event Name <span className="text-accent">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                id="eventName"
+                                name="eventName"
+                                required={inquiryType === "event"}
+                                className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
+                                         placeholder:text-text-light focus:outline-none focus:ring-2
+                                         focus:ring-primary focus:border-transparent transition-shadow"
+                                placeholder="Name of your event"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="eventDate"
+                                className="block text-body-sm font-medium text-text mb-2"
+                              >
+                                Event Date(s) <span className="text-accent">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                id="eventDate"
+                                name="eventDate"
+                                required={inquiryType === "event"}
+                                className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
+                                         placeholder:text-text-light focus:outline-none focus:ring-2
+                                         focus:ring-primary focus:border-transparent transition-shadow"
+                                placeholder="e.g., Dec 15, 2025 or Dec 15-17"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="eventLocation"
+                                className="block text-body-sm font-medium text-text mb-2"
+                              >
+                                Event Location <span className="text-accent">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                id="eventLocation"
+                                name="eventLocation"
+                                required={inquiryType === "event"}
+                                className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
+                                         placeholder:text-text-light focus:outline-none focus:ring-2
+                                         focus:ring-primary focus:border-transparent transition-shadow"
+                                placeholder="Venue and address"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="eventWebsite"
+                                className="block text-body-sm font-medium text-text mb-2"
+                              >
+                                Event Website/Contact
+                              </label>
+                              <input
+                                type="text"
+                                id="eventWebsite"
+                                name="eventWebsite"
+                                className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
+                                         placeholder:text-text-light focus:outline-none focus:ring-2
+                                         focus:ring-primary focus:border-transparent transition-shadow"
+                                placeholder="URL or contact info"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Contact Info */}
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <label
@@ -214,27 +373,42 @@ export default function Contact() {
                         </div>
                       </div>
 
-                      <div>
-                        <label
-                          htmlFor="subject"
-                          className="block text-body-sm font-medium text-text mb-2"
-                        >
-                          Subject <span className="text-accent">*</span>
-                        </label>
-                        <select
-                          id="subject"
-                          name="subject"
-                          required
-                          className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
-                                   focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow"
-                        >
-                          <option value="">Select a subject</option>
-                          {subjects.map((subject) => (
-                            <option key={subject} value={subject}>
-                              {subject}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label
+                            htmlFor="phone"
+                            className="block text-body-sm font-medium text-text mb-2"
+                          >
+                            Phone
+                          </label>
+                          <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
+                                     placeholder:text-text-light focus:outline-none focus:ring-2
+                                     focus:ring-primary focus:border-transparent transition-shadow"
+                            placeholder="(555) 555-5555"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="subject"
+                            className="block text-body-sm font-medium text-text mb-2"
+                          >
+                            Subject <span className="text-accent">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            id="subject"
+                            name="subject"
+                            required
+                            className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
+                                     placeholder:text-text-light focus:outline-none focus:ring-2
+                                     focus:ring-primary focus:border-transparent transition-shadow"
+                            placeholder="Brief subject line"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -248,11 +422,15 @@ export default function Contact() {
                           id="message"
                           name="message"
                           required
-                          rows={6}
+                          rows={5}
                           className="w-full px-4 py-3 rounded-lg border border-surface bg-white text-text
                                    placeholder:text-text-light focus:outline-none focus:ring-2
                                    focus:ring-primary focus:border-transparent transition-shadow resize-none"
-                          placeholder="How can we help you?"
+                          placeholder={
+                            inquiryType === "event"
+                              ? "Please include a description of your event..."
+                              : "How can we help you?"
+                          }
                         />
                       </div>
 

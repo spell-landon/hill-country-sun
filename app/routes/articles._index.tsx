@@ -9,6 +9,7 @@ import {
   getUniqueAuthors,
   getUniqueCategories,
   getArticleYears,
+  getAllPublications,
 } from '~/lib/mock-data';
 
 const ARTICLES_PER_PAGE = 9;
@@ -28,6 +29,7 @@ export const meta: MetaFunction = () => {
 const categories = getUniqueCategories();
 const authors = getUniqueAuthors();
 const years = getArticleYears();
+const publications = getAllPublications();
 
 // Build options for MultiSelect
 const categoryOptions = categories.map((c) => ({ value: c, label: c }));
@@ -35,6 +37,10 @@ const authorOptions = authors.map((a) => ({ value: a.slug, label: a.name }));
 const yearOptions = years.map((y) => ({
   value: y.toString(),
   label: y.toString(),
+}));
+const publicationOptions = publications.map((p) => ({
+  value: p.slug,
+  label: p.shortName,
 }));
 
 function slugify(text: string): string {
@@ -62,6 +68,7 @@ export default function ArticlesIndex() {
   const selectedCategories = parseMultiParam(searchParams.get('category'));
   const selectedAuthors = parseMultiParam(searchParams.get('author'));
   const selectedYears = parseMultiParam(searchParams.get('year'));
+  const selectedPublications = parseMultiParam(searchParams.get('publication'));
   const searchQuery = searchParams.get('q') || '';
   const currentPage = Math.max(
     1,
@@ -115,6 +122,7 @@ export default function ArticlesIndex() {
     selectedCategories.length > 0 ||
     selectedAuthors.length > 0 ||
     selectedYears.length > 0 ||
+    selectedPublications.length > 0 ||
     searchQuery;
 
   // Sort articles by date, newest first
@@ -141,6 +149,12 @@ export default function ArticlesIndex() {
   if (selectedYears.length > 0) {
     filteredArticles = filteredArticles.filter((a) =>
       selectedYears.includes(new Date(a.publishedAt).getFullYear().toString())
+    );
+  }
+
+  if (selectedPublications.length > 0) {
+    filteredArticles = filteredArticles.filter((a) =>
+      selectedPublications.includes(a.publication)
     );
   }
 
@@ -239,6 +253,13 @@ export default function ArticlesIndex() {
 
             {/* Filter Dropdowns */}
             <div className='flex flex-wrap items-center gap-3'>
+              <MultiSelect
+                options={publicationOptions}
+                selected={selectedPublications}
+                onChange={(values) => updateParam('publication', values)}
+                placeholder='All Publications'
+              />
+
               <MultiSelect
                 options={categoryOptions}
                 selected={selectedCategories}

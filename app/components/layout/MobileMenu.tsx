@@ -1,6 +1,6 @@
 import { Link } from "@remix-run/react";
-import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { X } from "lucide-react";
+import { Dialog, DialogPanel, DialogTitle, Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { X, ChevronDown } from "lucide-react";
 
 interface NavItem {
   label: string;
@@ -11,6 +11,7 @@ interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   navItems: NavItem[];
+  publicationItems: NavItem[];
   currentPath: string;
 }
 
@@ -18,8 +19,10 @@ export function MobileMenu({
   isOpen,
   onClose,
   navItems,
+  publicationItems,
   currentPath,
 }: MobileMenuProps) {
+  const isPublicationActive = publicationItems.some((item) => currentPath.startsWith(item.href));
   return (
     <Dialog open={isOpen} onClose={onClose} className="lg:hidden">
       {/* Backdrop */}
@@ -54,7 +57,66 @@ export function MobileMenu({
           {/* Navigation Links */}
           <nav className="flex-1 overflow-y-auto py-4" aria-label="Mobile navigation">
             <ul className="space-y-1 px-2">
-              {navItems.map((item) => (
+              {/* Main nav items before Publications */}
+              {navItems.slice(0, 2).map((item) => (
+                <li key={item.href}>
+                  <Link
+                    to={item.href}
+                    onClick={onClose}
+                    className={`block px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                      currentPath === item.href
+                        ? "text-primary bg-gray-100"
+                        : "text-gray-900 hover:text-primary hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+
+              {/* Publications Disclosure */}
+              <li>
+                <Disclosure defaultOpen={isPublicationActive}>
+                  {({ open }) => (
+                    <>
+                      <DisclosureButton
+                        className={`flex w-full items-center justify-between px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                          isPublicationActive
+                            ? "text-primary bg-gray-100"
+                            : "text-gray-900 hover:text-primary hover:bg-gray-50"
+                        }`}
+                      >
+                        <span>Publications</span>
+                        <ChevronDown
+                          className={`h-5 w-5 transition-transform ${
+                            open ? "rotate-180" : ""
+                          }`}
+                          aria-hidden="true"
+                        />
+                      </DisclosureButton>
+                      <DisclosurePanel className="mt-1 space-y-1 pl-4">
+                        {publicationItems.map((item) => (
+                          <Link
+                            key={item.href}
+                            to={item.href}
+                            onClick={onClose}
+                            className={`block px-4 py-2.5 text-base rounded-lg transition-colors ${
+                              currentPath.startsWith(item.href)
+                                ? "text-primary bg-gray-100 font-medium"
+                                : "text-gray-600 hover:text-primary hover:bg-gray-50"
+                            }`}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </DisclosurePanel>
+                    </>
+                  )}
+                </Disclosure>
+              </li>
+
+              {/* Remaining nav items (About) */}
+              {navItems.slice(2, 3).map((item) => (
                 <li key={item.href}>
                   <Link
                     to={item.href}

@@ -160,12 +160,25 @@
     @apply text-xl mt-8 mb-3;
   }
 
-  .prose-content ul, .prose-content ol {
-    @apply mb-6 pl-6;
+  .prose-content ul {
+    @apply mb-6 pl-6 list-disc;
+  }
+
+  .prose-content ol {
+    @apply mb-6 pl-6 list-decimal;
   }
 
   .prose-content li {
     @apply mb-2;
+  }
+
+  .prose-content figure {
+    @apply my-8;
+  }
+
+  .prose-content figcaption {
+    color: var(--color-text-muted);
+    @apply text-sm mt-3 text-center italic;
   }
 
   .prose-content blockquote {
