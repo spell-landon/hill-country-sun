@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import type { MetaFunction } from '@remix-run/node';
 import { useSearchParams } from '@remix-run/react';
-import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { Container } from '~/components/ui/Container';
 import { MultiSelect } from '~/components/ui/MultiSelect';
+import { FilterDrawer } from '~/components/ui/FilterDrawer';
 import { ArticleCard } from '~/components/articles/ArticleCard';
 import {
   mockArticles,
@@ -40,7 +42,7 @@ const yearOptions = years.map((y) => ({
 }));
 const publicationOptions = publications.map((p) => ({
   value: p.slug,
-  label: p.shortName,
+  label: p.name,
 }));
 
 function slugify(text: string): string {
@@ -63,6 +65,7 @@ function toMultiParam(values: string[]): string {
 
 export default function ArticlesIndex() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
   // Get filter values from URL (comma-separated for multi-select)
   const selectedCategories = parseMultiParam(searchParams.get('category'));
@@ -117,13 +120,14 @@ export default function ArticlesIndex() {
     setSearchParams(new URLSearchParams());
   };
 
-  // Check if any filters are active
-  const hasActiveFilters =
-    selectedCategories.length > 0 ||
-    selectedAuthors.length > 0 ||
-    selectedYears.length > 0 ||
-    selectedPublications.length > 0 ||
-    searchQuery;
+  // Check if any filters are active (excluding search)
+  const activeFilterCount =
+    selectedCategories.length +
+    selectedAuthors.length +
+    selectedYears.length +
+    selectedPublications.length;
+
+  const hasActiveFilters = activeFilterCount > 0 || searchQuery;
 
   // Sort articles by date, newest first
   const sortedArticles = [...mockArticles].sort(
@@ -216,43 +220,58 @@ export default function ArticlesIndex() {
 
   return (
     <>
-      {/* Hero Section */}
-      <section className='bg-primary py-16 md:py-24'>
+      {/* Hero Section - Compact on mobile */}
+      <section className='bg-primary py-8 sm:py-12 md:py-16'>
         <Container size='wide'>
           <div className='text-center max-w-3xl mx-auto'>
-            <h1 className='font-serif font-bold text-display-sm md:text-display-md text-white mb-4'>
-              Articles & Stories
+            <h1 className='font-serif font-bold text-heading-lg sm:text-display-sm md:text-display-md text-white sm:mb-4'>
+              Articles
             </h1>
-            <p className='text-primary-200 text-body-lg'>
+            <p className='hidden sm:block text-primary-200 text-body-lg'>
               Discover the latest news, features, and stories from across the
-              Hill Country. From local events to outdoor adventures, we cover
-              what matters to our community.
+              Hill Country.
             </p>
           </div>
         </Container>
       </section>
 
       {/* Filters */}
-      <section className='border-b border-surface sticky top-16 md:top-20 bg-white z-20'>
+      <section className='border-b border-surface sticky top-14 sm:top-16 md:top-20 bg-white z-20'>
         <Container size='wide'>
-          <div className='py-4 space-y-4'>
-            {/* Search Bar */}
-            <div className='relative'>
-              <Search
-                className='absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted'
-                aria-hidden='true'
-              />
-              <input
-                type='search'
-                placeholder='Search articles...'
-                value={searchQuery}
-                onChange={(e) => updateSearch(e.target.value)}
-                className='w-full pl-10 pr-4 py-2.5 rounded-lg border border-surface bg-surface/50 text-body-md placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent'
-              />
+          <div className='py-3 sm:py-4 space-y-3 sm:space-y-4'>
+            {/* Mobile: Search + Filter Button */}
+            <div className='flex items-center gap-3'>
+              <div className='relative flex-1'>
+                <Search
+                  className='absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted'
+                  aria-hidden='true'
+                />
+                <input
+                  type='search'
+                  placeholder='Search articles...'
+                  value={searchQuery}
+                  onChange={(e) => updateSearch(e.target.value)}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-lg border border-surface bg-surface/50 text-body-md placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent'
+                />
+              </div>
+
+              {/* Mobile Filter Button */}
+              <button
+                onClick={() => setIsFilterDrawerOpen(true)}
+                className='sm:hidden relative inline-flex items-center justify-center w-11 h-11 rounded-lg border border-surface bg-surface/50 text-text-muted hover:text-primary hover:border-primary/30 transition-colors'
+                aria-label='Open filters'
+              >
+                <SlidersHorizontal className='h-5 w-5' aria-hidden='true' />
+                {activeFilterCount > 0 && (
+                  <span className='absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs font-semibold rounded-full flex items-center justify-center'>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
 
-            {/* Filter Dropdowns */}
-            <div className='flex flex-wrap items-center gap-3'>
+            {/* Desktop: Filter Dropdowns */}
+            <div className='hidden sm:flex flex-wrap items-center gap-3'>
               <MultiSelect
                 options={publicationOptions}
                 selected={selectedPublications}
@@ -297,9 +316,83 @@ export default function ArticlesIndex() {
                 {filteredArticles.length === 1 ? 'article' : 'articles'}
               </span>
             </div>
+
+            {/* Mobile: Result count */}
+            <div className='flex sm:hidden items-center justify-between'>
+              <span className='text-body-sm text-text-muted'>
+                {filteredArticles.length}{' '}
+                {filteredArticles.length === 1 ? 'article' : 'articles'}
+              </span>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className='inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:text-primary-600 transition-colors'>
+                  <X className='h-4 w-4' aria-hidden='true' />
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
         </Container>
       </section>
+
+      {/* Mobile Filter Drawer */}
+      <FilterDrawer
+        isOpen={isFilterDrawerOpen}
+        onClose={() => setIsFilterDrawerOpen(false)}
+        onClear={clearFilters}
+        hasActiveFilters={activeFilterCount > 0}
+      >
+        <div className='space-y-5'>
+          <div>
+            <label className='block text-sm font-medium text-primary mb-2'>
+              Publications
+            </label>
+            <MultiSelect
+              options={publicationOptions}
+              selected={selectedPublications}
+              onChange={(values) => updateParam('publication', values)}
+              placeholder='All Publications'
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium text-primary mb-2'>
+              Categories
+            </label>
+            <MultiSelect
+              options={categoryOptions}
+              selected={selectedCategories}
+              onChange={(values) => updateParam('category', values)}
+              placeholder='All Categories'
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium text-primary mb-2'>
+              Authors
+            </label>
+            <MultiSelect
+              options={authorOptions}
+              selected={selectedAuthors}
+              onChange={(values) => updateParam('author', values)}
+              placeholder='All Authors'
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium text-primary mb-2'>
+              Years
+            </label>
+            <MultiSelect
+              options={yearOptions}
+              selected={selectedYears}
+              onChange={(values) => updateParam('year', values)}
+              placeholder='All Years'
+            />
+          </div>
+        </div>
+      </FilterDrawer>
 
       {/* Articles Grid */}
       <section className='py-12 md:py-16'>

@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, User, Share2, Facebook, Twitter } from "lucide-rea
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { ArticleCard } from "~/components/articles/ArticleCard";
-import { mockArticles, getArticleBySlug } from "~/lib/mock-data";
+import { mockArticles, getArticleBySlug, getPublicationBySlug } from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -52,6 +52,7 @@ function slugify(text: string): string {
 export default function ArticlePage() {
   const { article, relatedArticles } = useLoaderData<typeof loader>();
   const authorSlug = slugify(article.author.name);
+  const publication = getPublicationBySlug(article.publication);
 
   return (
     <article>
@@ -67,12 +68,22 @@ export default function ArticlePage() {
               Back to Articles
             </Link>
 
-            <Link
-              to={`/articles?category=${encodeURIComponent(article.category)}`}
-              className="inline-flex items-center px-3 py-1 rounded-full text-body-sm font-semibold bg-secondary/20 text-primary hover:bg-secondary/30 transition-colors"
-            >
-              {article.category}
-            </Link>
+            <div className="flex items-center gap-2">
+              {publication && (
+                <Link
+                  to={`/publications/${publication.slug}`}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-body-sm font-semibold bg-primary/90 text-white hover:bg-primary transition-colors"
+                >
+                  {publication.name}
+                </Link>
+              )}
+              <Link
+                to={`/articles?category=${encodeURIComponent(article.category)}`}
+                className="inline-flex items-center px-3 py-1 rounded-full text-body-sm font-semibold bg-secondary/20 text-primary hover:bg-secondary/30 transition-colors"
+              >
+                {article.category}
+              </Link>
+            </div>
           </div>
 
           <h1 className="font-serif font-bold text-display-sm md:text-display-md text-primary mb-6 text-balance">

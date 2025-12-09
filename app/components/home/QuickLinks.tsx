@@ -2,11 +2,20 @@
 
 import { Link } from "@remix-run/react";
 import { motion, useReducedMotion } from "framer-motion";
-import { MapPin, Fish, Target, ArrowRight } from "lucide-react";
+import { Sun, MapPin, Fish, Target, ArrowRight } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { SectionHeading } from "~/components/ui/SectionHeading";
 
-const guides = [
+const publications = [
+  {
+    title: "Hill Country Sun",
+    description:
+      "Your source for Hill Country news, events, and stories celebrating our vibrant community.",
+    href: "/publications/hill-country-sun",
+    icon: Sun,
+    image:
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
+  },
   {
     title: "Welcome to Wimberley",
     description:
@@ -63,35 +72,35 @@ export function QuickLinks() {
           transition={{ duration: 0.5 }}
         >
           <SectionHeading
-            title="Explore Our Guides"
+            title="Explore Our Publications"
             subtitle="In-depth resources to help you make the most of the Hill Country."
             align="center"
           />
         </motion.div>
 
         <motion.div
-          className="grid md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
+          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
         >
-          {guides.map((guide) => {
-            const Icon = guide.icon;
+          {publications.map((publication) => {
+            const Icon = publication.icon;
             return (
               <motion.div
-                key={guide.href}
+                key={publication.href}
                 variants={itemVariants}
                 transition={{ duration: 0.5, ease: "easeOut" }}
               >
                 <Link
-                  to={guide.href}
+                  to={publication.href}
                   className="group relative block overflow-hidden rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300"
                 >
                   {/* Background Image */}
                   <div className="aspect-[4/3] relative overflow-hidden">
                     <img
-                      src={guide.image}
+                      src={publication.image}
                       alt=""
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 motion-reduce:group-hover:scale-100"
                     />
@@ -99,20 +108,20 @@ export function QuickLinks() {
                   </div>
 
                   {/* Content */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-                    <div className="inline-flex items-center justify-center w-10 h-10 bg-secondary rounded-lg mb-3">
-                      <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
+                    <div className="inline-flex items-center justify-center w-9 h-9 bg-secondary rounded-lg mb-2">
+                      <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
                     </div>
-                    <h3 className="font-serif font-bold text-lg sm:text-xl text-white mb-2 group-hover:text-secondary transition-colors">
-                      {guide.title}
+                    <h3 className="font-serif font-bold text-base sm:text-lg text-white mb-1 group-hover:text-secondary transition-colors">
+                      {publication.title}
                     </h3>
-                    <p className="text-white/80 text-sm mb-3 line-clamp-2">
-                      {guide.description}
+                    <p className="text-white/80 text-xs sm:text-sm mb-2 line-clamp-2">
+                      {publication.description}
                     </p>
-                    <span className="inline-flex items-center text-secondary text-sm font-semibold">
+                    <span className="inline-flex items-center text-secondary text-xs sm:text-sm font-semibold">
                       Learn More
                       <ArrowRight
-                        className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0"
+                        className="ml-1 h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0"
                         aria-hidden="true"
                       />
                     </span>

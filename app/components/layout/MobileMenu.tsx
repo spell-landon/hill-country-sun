@@ -1,5 +1,6 @@
 import { Link } from "@remix-run/react";
-import { Dialog, DialogPanel, DialogTitle, Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { Dialog, DialogPanel, DialogTitle, Disclosure, DisclosureButton, DisclosurePanel, Transition, TransitionChild } from "@headlessui/react";
+import { Fragment } from "react";
 import { X, ChevronDown } from "lucide-react";
 
 interface NavItem {
@@ -24,16 +25,35 @@ export function MobileMenu({
 }: MobileMenuProps) {
   const isPublicationActive = publicationItems.some((item) => currentPath.startsWith(item.href));
   return (
-    <Dialog open={isOpen} onClose={onClose} className="lg:hidden">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 z-40"
-        aria-hidden="true"
-        onClick={onClose}
-      />
+    <Transition show={isOpen} as={Fragment}>
+      <Dialog onClose={onClose} className="lg:hidden relative z-50">
+        {/* Backdrop */}
+        <TransitionChild
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div
+            className="fixed inset-0 bg-black/30"
+            aria-hidden="true"
+          />
+        </TransitionChild>
 
-      {/* Panel */}
-      <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-xl">
+        {/* Panel */}
+        <TransitionChild
+          as={Fragment}
+          enter="transform transition ease-out duration-300"
+          enterFrom="translate-x-full"
+          enterTo="translate-x-0"
+          leave="transform transition ease-in duration-200"
+          leaveFrom="translate-x-0"
+          leaveTo="translate-x-full"
+        >
+          <DialogPanel className="fixed inset-y-0 right-0 w-full max-w-sm bg-white shadow-xl">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
@@ -145,7 +165,9 @@ export function MobileMenu({
             </Link>
           </div>
         </div>
-      </DialogPanel>
-    </Dialog>
+          </DialogPanel>
+        </TransitionChild>
+      </Dialog>
+    </Transition>
   );
 }
