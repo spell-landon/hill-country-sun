@@ -1,27 +1,80 @@
 import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
-import { ArrowLeft, Calendar, User, Share2, Facebook, Twitter } from "lucide-react";
+import { ArrowLeft, Share2, Facebook, Twitter } from "lucide-react";
+import { PortableText } from "@portabletext/react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { ArticleCard } from "~/components/articles/ArticleCard";
-import { mockArticles, getArticleBySlug, getPublicationBySlug } from "~/lib/mock-data";
+import {
+  getArticleBySlug,
+  getArticlesByCategory,
+  getPublicationBySlug,
+  urlFor,
+} from "~/lib/sanity.server";
 import { formatDate } from "~/lib/utils";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { slug } = params;
-  const article = getArticleBySlug(slug || "");
+  const article = await getArticleBySlug(slug || "");
 
   if (!article) {
     throw new Response("Article not found", { status: 404 });
   }
 
   // Get related articles (same category, excluding current)
-  const relatedArticles = mockArticles
-    .filter((a) => a.category === article.category && a.id !== article.id)
-    .slice(0, 3);
+  const categorySlug = article.category?.slug?.current;
+  let relatedArticles: any[] = [];
 
-  return json({ article, relatedArticles });
+  if (categorySlug) {
+    const categoryArticles = await getArticlesByCategory(categorySlug);
+    relatedArticles = categoryArticles
+      .filter((a) => a._id !== article._id)
+      .slice(0, 3)
+      .map((a) => ({
+        id: a._id,
+        title: a.title,
+        slug: a.slug.current,
+        excerpt: a.excerpt || "",
+        mainImage: a.mainImage ? urlFor(a.mainImage).width(800).url() : "",
+        author: {
+          name: a.author?.name || "Unknown",
+          image: a.author?.image ? urlFor(a.author.image).width(100).url() : "",
+        },
+        category: a.category?.title || "Uncategorized",
+        publishedAt: a.publishedAt,
+        featured: a.featured || false,
+        publication: a.publication?.slug?.current || "hill-country-sun",
+      }));
+  }
+
+  // Get publication details
+  const publication = article.publication?.slug?.current
+    ? await getPublicationBySlug(article.publication.slug.current)
+    : null;
+
+  // Transform article for component
+  const transformedArticle = {
+    id: article._id,
+    title: article.title,
+    slug: article.slug.current,
+    excerpt: article.excerpt || "",
+    body: article.body,
+    mainImage: article.mainImage ? urlFor(article.mainImage).width(1200).url() : "",
+    author: {
+      name: article.author?.name || "Unknown",
+      slug: article.author?.slug?.current || "",
+      image: article.author?.image ? urlFor(article.author.image).width(200).url() : "",
+    },
+    category: article.category?.title || "Uncategorized",
+    publishedAt: article.publishedAt,
+    publication: publication ? {
+      name: publication.name,
+      slug: publication.slug.current,
+    } : null,
+  };
+
+  return json({ article: transformedArticle, relatedArticles });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -42,17 +95,46 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   ];
 };
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
+// Portable Text components for rendering
+const portableTextComponents = {
+  block: {
+    h1: ({ children }: any) => <h1 className="text-3xl font-serif font-bold mt-8 mb-4">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-2xl font-serif font-bold mt-8 mb-4">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-xl font-serif font-bold mt-6 mb-3">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-lg font-serif font-bold mt-6 mb-3">{children}</h4>,
+    normal: ({ children }: any) => <p className="mb-4 leading-relaxed">{children}</p>,
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-secondary pl-4 my-6 italic text-text-muted">
+        {children}
+      </blockquote>
+    ),
+  },
+  list: {
+    bullet: ({ children }: any) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+    number: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
+  },
+  listItem: {
+    bullet: ({ children }: any) => <li>{children}</li>,
+    number: ({ children }: any) => <li>{children}</li>,
+  },
+  marks: {
+    strong: ({ children }: any) => <strong className="font-bold">{children}</strong>,
+    em: ({ children }: any) => <em className="italic">{children}</em>,
+    link: ({ value, children }: any) => (
+      <a
+        href={value?.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline hover:text-primary-600"
+      >
+        {children}
+      </a>
+    ),
+  },
+};
 
 export default function ArticlePage() {
   const { article, relatedArticles } = useLoaderData<typeof loader>();
-  const authorSlug = slugify(article.author.name);
-  const publication = getPublicationBySlug(article.publication);
 
   return (
     <article>
@@ -69,12 +151,12 @@ export default function ArticlePage() {
             </Link>
 
             <div className="flex items-center gap-2">
-              {publication && (
+              {article.publication && (
                 <Link
-                  to={`/publications/${publication.slug}`}
+                  to={`/publications/${article.publication.slug}`}
                   className="inline-flex items-center px-3 py-1 rounded-full text-body-sm font-semibold bg-primary/90 text-white hover:bg-primary transition-colors"
                 >
-                  {publication.name}
+                  {article.publication.name}
                 </Link>
               )}
               <Link
@@ -92,14 +174,16 @@ export default function ArticlePage() {
 
           <div className="flex flex-wrap items-center gap-4 text-body-sm text-text-muted">
             <Link
-              to={`/authors/${authorSlug}`}
+              to={`/authors/${article.author.slug}`}
               className="flex items-center gap-3 hover:text-primary transition-colors"
             >
-              <img
-                src={article.author.image}
-                alt=""
-                className="w-10 h-10 rounded-full object-cover"
-              />
+              {article.author.image && (
+                <img
+                  src={article.author.image}
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              )}
               <div>
                 <span className="block text-text font-medium">
                   {article.author.name}
@@ -114,31 +198,36 @@ export default function ArticlePage() {
       </section>
 
       {/* Featured Image */}
-      <section className="py-8">
-        <Container size="default">
-          <div className="aspect-video md:aspect-[21/9] overflow-hidden rounded-xl">
-            <img
-              src={article.mainImage}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </Container>
-      </section>
+      {article.mainImage && (
+        <section className="py-8">
+          <Container size="default">
+            <div className="aspect-video md:aspect-[21/9] overflow-hidden rounded-xl">
+              <img
+                src={article.mainImage}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Article Content */}
       <section className="py-8">
         <Container size="narrow">
           {/* Lead paragraph */}
-          <p className="text-body-lg text-text leading-relaxed mb-8 font-medium">
-            {article.excerpt}
-          </p>
+          {article.excerpt && (
+            <p className="text-body-lg text-text leading-relaxed mb-8 font-medium">
+              {article.excerpt}
+            </p>
+          )}
 
-          {/* Main content */}
-          <div
-            className="prose-content"
-            dangerouslySetInnerHTML={{ __html: article.content }}
-          />
+          {/* Main content - Portable Text */}
+          {article.body && (
+            <div className="prose-content">
+              <PortableText value={article.body} components={portableTextComponents} />
+            </div>
+          )}
 
           {/* Share buttons */}
           <div className="border-t border-surface mt-12 pt-8">
@@ -150,7 +239,7 @@ export default function ArticlePage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (navigator.share) {
+                  if (typeof navigator !== "undefined" && navigator.share) {
                     navigator.share({
                       title: article.title,
                       text: article.excerpt,
@@ -195,14 +284,16 @@ export default function ArticlePage() {
       <section className="py-8 bg-surface">
         <Container size="narrow">
           <Link
-            to={`/authors/${authorSlug}`}
+            to={`/authors/${article.author.slug}`}
             className="flex items-start gap-4 group"
           >
-            <img
-              src={article.author.image}
-              alt=""
-              className="w-16 h-16 rounded-full object-cover"
-            />
+            {article.author.image && (
+              <img
+                src={article.author.image}
+                alt=""
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            )}
             <div>
               <p className="text-body-sm text-text-muted mb-1">Written by</p>
               <h3 className="font-serif font-bold text-heading-sm text-primary mb-2 group-hover:text-primary-600 transition-colors">

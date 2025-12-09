@@ -64,6 +64,13 @@ export default defineType({
       initialValue: false,
     }),
     defineField({
+      name: 'publication',
+      title: 'Publication',
+      type: 'reference',
+      to: [{ type: 'publication' }],
+      description: 'Which publication this issue belongs to',
+    }),
+    defineField({
       name: 'description',
       title: 'Description',
       type: 'text',

@@ -4,13 +4,13 @@ import { useLoaderData, Link } from "@remix-run/react";
 import { ArrowRight, Calendar, BookOpen } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
-import { IssuuEmbed } from "~/components/magazine/IssuuEmbed";
 import {
   getPublicationBySlug,
-  getCurrentIssueByPublication,
+  getCurrentIssue,
   getIssuesByPublication,
   getArticlesByPublication,
-} from "~/lib/mock-data";
+  urlFor,
+} from "~/lib/sanity.server";
 import { formatDate } from "~/lib/utils";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -20,21 +20,47 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     throw new Response("Publication slug required", { status: 400 });
   }
 
-  const publication = getPublicationBySlug(slug);
+  const publication = await getPublicationBySlug(slug);
 
   if (!publication) {
     throw new Response("Publication not found", { status: 404 });
   }
 
-  const currentIssue = getCurrentIssueByPublication(slug);
-  const allIssues = getIssuesByPublication(slug);
-  const articleCount = getArticlesByPublication(slug).length;
+  const [currentIssue, allIssues, articles] = await Promise.all([
+    getCurrentIssue(slug),
+    getIssuesByPublication(slug),
+    getArticlesByPublication(slug),
+  ]);
+
+  // Transform publication
+  const transformedPublication = {
+    id: publication._id,
+    name: publication.name,
+    shortName: publication.shortName,
+    slug: publication.slug.current,
+    description: publication.description,
+    heroImage: publication.heroImage ? urlFor(publication.heroImage).width(1600).url() : "",
+    sections: publication.sections?.map((section) => ({
+      title: section.title,
+      content: section.content,
+      image: section.image ? urlFor(section.image).width(800).url() : null,
+    })) || [],
+  };
+
+  // Transform current issue
+  const transformedIssue = currentIssue ? {
+    id: currentIssue._id,
+    title: currentIssue.title,
+    slug: currentIssue.slug.current,
+    coverImage: currentIssue.coverImage ? urlFor(currentIssue.coverImage).width(600).url() : "",
+    publishedAt: currentIssue.publishedAt,
+  } : null;
 
   return json({
-    publication,
-    currentIssue,
+    publication: transformedPublication,
+    currentIssue: transformedIssue,
     issueCount: allIssues.length,
-    articleCount,
+    articleCount: articles.length,
   });
 };
 
@@ -62,11 +88,13 @@ export default function PublicationPage() {
       {/* Hero Section */}
       <section className="relative min-h-[60vh] flex items-center">
         <div className="absolute inset-0">
-          <img
-            src={publication.heroImage}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          {publication.heroImage && (
+            <img
+              src={publication.heroImage}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
         </div>
         <Container size="wide" className="relative z-10 py-16 md:py-24">
@@ -135,11 +163,13 @@ export default function PublicationPage() {
                   className="block group"
                 >
                   <div className="aspect-[3/4] overflow-hidden rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
-                    <img
-                      src={currentIssue.coverImage}
-                      alt={`${currentIssue.title} cover`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    {currentIssue.coverImage && (
+                      <img
+                        src={currentIssue.coverImage}
+                        alt={`${currentIssue.title} cover`}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    )}
                   </div>
                 </Link>
               </div>

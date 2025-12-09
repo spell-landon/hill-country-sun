@@ -8,7 +8,8 @@ import { IssueCard } from "~/components/magazine/IssueCard";
 import {
   getPublicationBySlug,
   getIssuesByPublication,
-} from "~/lib/mock-data";
+  urlFor,
+} from "~/lib/sanity.server";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { slug } = params;
@@ -17,15 +18,30 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     throw new Response("Publication slug required", { status: 400 });
   }
 
-  const publication = getPublicationBySlug(slug);
+  const publication = await getPublicationBySlug(slug);
 
   if (!publication) {
     throw new Response("Publication not found", { status: 404 });
   }
 
-  const issues = getIssuesByPublication(slug);
+  const issues = await getIssuesByPublication(slug);
 
-  return json({ publication, issues });
+  // Transform data
+  const transformedPublication = {
+    name: publication.name,
+    slug: publication.slug.current,
+  };
+
+  const transformedIssues = issues.map((issue) => ({
+    id: issue._id,
+    title: issue.title,
+    slug: issue.slug.current,
+    coverImage: issue.coverImage ? urlFor(issue.coverImage).width(400).url() : "",
+    publishedAt: issue.publishedAt,
+    isCurrent: issue.isCurrent || false,
+  }));
+
+  return json({ publication: transformedPublication, issues: transformedIssues });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {

@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import type { MetaFunction } from '@remix-run/node';
-import { useSearchParams } from '@remix-run/react';
+import type { MetaFunction, LoaderFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/node';
+import { useLoaderData, useSearchParams } from '@remix-run/react';
 import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { Container } from '~/components/ui/Container';
 import { MultiSelect } from '~/components/ui/MultiSelect';
 import { FilterDrawer } from '~/components/ui/FilterDrawer';
 import { ArticleCard } from '~/components/articles/ArticleCard';
 import {
-  mockArticles,
-  getUniqueAuthors,
-  getUniqueCategories,
+  getArticles,
+  getAuthors,
+  getCategories,
+  getPublications,
   getArticleYears,
-  getAllPublications,
-} from '~/lib/mock-data';
+  urlFor,
+} from '~/lib/sanity.server';
 
 const ARTICLES_PER_PAGE = 9;
 
@@ -27,23 +29,49 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-// Get filter options
-const categories = getUniqueCategories();
-const authors = getUniqueAuthors();
-const years = getArticleYears();
-const publications = getAllPublications();
+export async function loader({ request }: LoaderFunctionArgs) {
+  const [articles, authors, categories, publications, years] = await Promise.all([
+    getArticles(),
+    getAuthors(),
+    getCategories(),
+    getPublications(),
+    getArticleYears(),
+  ]);
 
-// Build options for MultiSelect
-const categoryOptions = categories.map((c) => ({ value: c, label: c }));
-const authorOptions = authors.map((a) => ({ value: a.slug, label: a.name }));
-const yearOptions = years.map((y) => ({
-  value: y.toString(),
-  label: y.toString(),
-}));
-const publicationOptions = publications.map((p) => ({
-  value: p.slug,
-  label: p.name,
-}));
+  // Transform articles for the component
+  const transformedArticles = articles.map((article) => ({
+    id: article._id,
+    title: article.title,
+    slug: article.slug.current,
+    excerpt: article.excerpt || '',
+    mainImage: article.mainImage ? urlFor(article.mainImage).width(800).url() : '',
+    author: {
+      name: article.author?.name || 'Unknown',
+      slug: article.author?.slug?.current || '',
+      image: article.author?.image ? urlFor(article.author.image).width(100).url() : '',
+    },
+    category: article.category?.title || 'Uncategorized',
+    publishedAt: article.publishedAt,
+    featured: article.featured || false,
+    publication: article.publication?.slug?.current || 'hill-country-sun',
+  }));
+
+  // Build filter options
+  const categoryOptions = categories.map((c) => ({ value: c.title, label: c.title }));
+  const authorOptions = authors.map((a) => ({ value: a.slug.current, label: a.name }));
+  const yearOptions = years.map((y) => ({ value: y.toString(), label: y.toString() }));
+  const publicationOptions = publications.map((p) => ({ value: p.slug.current, label: p.name }));
+
+  return json({
+    articles: transformedArticles,
+    filterOptions: {
+      categories: categoryOptions,
+      authors: authorOptions,
+      years: yearOptions,
+      publications: publicationOptions,
+    },
+  });
+}
 
 function slugify(text: string): string {
   return text
@@ -64,6 +92,7 @@ function toMultiParam(values: string[]): string {
 }
 
 export default function ArticlesIndex() {
+  const { articles, filterOptions } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
@@ -129,8 +158,8 @@ export default function ArticlesIndex() {
 
   const hasActiveFilters = activeFilterCount > 0 || searchQuery;
 
-  // Sort articles by date, newest first
-  const sortedArticles = [...mockArticles].sort(
+  // Sort articles by date, newest first (already sorted from Sanity, but ensure order)
+  const sortedArticles = [...articles].sort(
     (a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
@@ -146,7 +175,7 @@ export default function ArticlesIndex() {
 
   if (selectedAuthors.length > 0) {
     filteredArticles = filteredArticles.filter((a) =>
-      selectedAuthors.includes(slugify(a.author.name))
+      selectedAuthors.includes(a.author.slug || slugify(a.author.name))
     );
   }
 
@@ -273,28 +302,28 @@ export default function ArticlesIndex() {
             {/* Desktop: Filter Dropdowns */}
             <div className='hidden sm:flex flex-wrap items-center gap-3'>
               <MultiSelect
-                options={publicationOptions}
+                options={filterOptions.publications}
                 selected={selectedPublications}
                 onChange={(values) => updateParam('publication', values)}
                 placeholder='All Publications'
               />
 
               <MultiSelect
-                options={categoryOptions}
+                options={filterOptions.categories}
                 selected={selectedCategories}
                 onChange={(values) => updateParam('category', values)}
                 placeholder='All Categories'
               />
 
               <MultiSelect
-                options={authorOptions}
+                options={filterOptions.authors}
                 selected={selectedAuthors}
                 onChange={(values) => updateParam('author', values)}
                 placeholder='All Authors'
               />
 
               <MultiSelect
-                options={yearOptions}
+                options={filterOptions.years}
                 selected={selectedYears}
                 onChange={(values) => updateParam('year', values)}
                 placeholder='All Years'
@@ -349,7 +378,7 @@ export default function ArticlesIndex() {
               Publications
             </label>
             <MultiSelect
-              options={publicationOptions}
+              options={filterOptions.publications}
               selected={selectedPublications}
               onChange={(values) => updateParam('publication', values)}
               placeholder='All Publications'
@@ -361,7 +390,7 @@ export default function ArticlesIndex() {
               Categories
             </label>
             <MultiSelect
-              options={categoryOptions}
+              options={filterOptions.categories}
               selected={selectedCategories}
               onChange={(values) => updateParam('category', values)}
               placeholder='All Categories'
@@ -373,7 +402,7 @@ export default function ArticlesIndex() {
               Authors
             </label>
             <MultiSelect
-              options={authorOptions}
+              options={filterOptions.authors}
               selected={selectedAuthors}
               onChange={(values) => updateParam('author', values)}
               placeholder='All Authors'
@@ -385,7 +414,7 @@ export default function ArticlesIndex() {
               Years
             </label>
             <MultiSelect
-              options={yearOptions}
+              options={filterOptions.years}
               selected={selectedYears}
               onChange={(values) => updateParam('year', values)}
               placeholder='All Years'

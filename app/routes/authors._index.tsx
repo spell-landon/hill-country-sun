@@ -1,7 +1,33 @@
-import type { MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData, Link } from "@remix-run/react";
 import { Container } from "~/components/ui/Container";
-import { getUniqueAuthors, getArticlesByAuthor } from "~/lib/mock-data";
+import {
+  getAuthors,
+  getArticlesByAuthor,
+  urlFor,
+} from "~/lib/sanity.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const authors = await getAuthors();
+
+  // Get article counts for each author
+  const authorsWithCounts = await Promise.all(
+    authors.map(async (author) => {
+      const articles = await getArticlesByAuthor(author.slug.current);
+      return {
+        name: author.name,
+        slug: author.slug.current,
+        image: author.image ? urlFor(author.image).width(200).url() : "",
+        role: author.role || "Contributing Writer",
+        bio: author.bio || "",
+        articleCount: articles.length,
+      };
+    })
+  );
+
+  return json({ authors: authorsWithCounts });
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -15,7 +41,7 @@ export const meta: MetaFunction = () => {
 };
 
 export default function AuthorsIndex() {
-  const authors = getUniqueAuthors();
+  const { authors } = useLoaderData<typeof loader>();
 
   return (
     <>
@@ -37,11 +63,15 @@ export default function AuthorsIndex() {
       {/* Authors Grid */}
       <section className="py-12 md:py-16">
         <Container size="wide">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {authors.map((author) => {
-              const articleCount = getArticlesByAuthor(author.name).length;
-
-              return (
+          {authors.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-text-muted text-body-lg">
+                No authors found. Check back soon!
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {authors.map((author) => (
                 <Link
                   key={author.slug}
                   to={`/authors/${author.slug}`}
@@ -49,11 +79,13 @@ export default function AuthorsIndex() {
                 >
                   <article className="bg-white rounded-xl shadow-sm border border-surface overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-6 flex items-start gap-4">
-                      <img
-                        src={author.image}
-                        alt=""
-                        className="w-20 h-20 rounded-full object-cover flex-shrink-0"
-                      />
+                      {author.image && (
+                        <img
+                          src={author.image}
+                          alt=""
+                          className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <h2 className="font-serif font-bold text-heading-sm text-primary mb-1 group-hover:text-primary-600 transition-colors">
                           {author.name}
@@ -61,19 +93,21 @@ export default function AuthorsIndex() {
                         <p className="text-body-sm text-secondary font-medium mb-2">
                           {author.role}
                         </p>
-                        <p className="text-body-sm text-text-muted line-clamp-2">
-                          {author.bio}
-                        </p>
+                        {author.bio && (
+                          <p className="text-body-sm text-text-muted line-clamp-2">
+                            {author.bio}
+                          </p>
+                        )}
                         <p className="text-body-sm text-text-light mt-2">
-                          {articleCount} {articleCount === 1 ? "article" : "articles"}
+                          {author.articleCount} {author.articleCount === 1 ? "article" : "articles"}
                         </p>
                       </div>
                     </div>
                   </article>
                 </Link>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </Container>
       </section>
     </>

@@ -5,22 +5,54 @@ import { ArrowLeft, Mail } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { ArticleCard } from "~/components/articles/ArticleCard";
-import { getAuthorBySlug, getArticlesByAuthor } from "~/lib/mock-data";
+import {
+  getAuthorBySlug,
+  getArticlesByAuthor,
+  urlFor,
+} from "~/lib/sanity.server";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { slug } = params;
-  const author = getAuthorBySlug(slug || "");
+
+  if (!slug) {
+    throw new Response("Author slug required", { status: 400 });
+  }
+
+  const author = await getAuthorBySlug(slug);
 
   if (!author) {
     throw new Response("Author not found", { status: 404 });
   }
 
-  const articles = getArticlesByAuthor(author.name).sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-  );
+  const articles = await getArticlesByAuthor(slug);
 
-  return json({ author, articles });
+  // Transform author data
+  const transformedAuthor = {
+    name: author.name,
+    slug: author.slug.current,
+    image: author.image ? urlFor(author.image).width(300).url() : "",
+    role: author.role || "Contributing Writer",
+    bio: author.bio || "",
+  };
+
+  // Transform articles
+  const transformedArticles = articles.map((article) => ({
+    id: article._id,
+    title: article.title,
+    slug: article.slug.current,
+    excerpt: article.excerpt || "",
+    mainImage: article.mainImage ? urlFor(article.mainImage).width(800).url() : "",
+    author: {
+      name: article.author?.name || "Unknown",
+      image: article.author?.image ? urlFor(article.author.image).width(100).url() : "",
+    },
+    category: article.category?.title || "Uncategorized",
+    publishedAt: article.publishedAt,
+    featured: article.featured || false,
+    publication: article.publication?.slug?.current || "hill-country-sun",
+  }));
+
+  return json({ author: transformedAuthor, articles: transformedArticles });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -58,11 +90,13 @@ export default function AuthorPage() {
           </Link>
 
           <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
-            <img
-              src={author.image}
-              alt=""
-              className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover flex-shrink-0"
-            />
+            {author.image && (
+              <img
+                src={author.image}
+                alt=""
+                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover flex-shrink-0"
+              />
+            )}
             <div className="flex-1">
               <p className="text-body-sm text-secondary font-semibold mb-2">
                 {author.role}
@@ -70,9 +104,11 @@ export default function AuthorPage() {
               <h1 className="font-serif font-bold text-display-sm md:text-display-md text-primary mb-4">
                 {author.name}
               </h1>
-              <p className="text-body-lg text-text-muted max-w-2xl mb-4">
-                {author.bio}
-              </p>
+              {author.bio && (
+                <p className="text-body-lg text-text-muted max-w-2xl mb-4">
+                  {author.bio}
+                </p>
+              )}
               <div className="flex flex-wrap gap-3">
                 <Button
                   to={`/articles?author=${author.slug}`}

@@ -1,10 +1,34 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import { useState } from "react";
-import { CalendarDays, List, Plus } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { EventCard } from "~/components/calendar/EventCard";
-import { mockEvents } from "~/lib/mock-data";
+import { getEvents } from "~/lib/sanity.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const events = await getEvents();
+
+  // Transform events for component
+  const transformedEvents = events.map((event) => ({
+    id: event._id,
+    title: event.title,
+    date: event.date,
+    endDate: event.endDate,
+    location: event.location,
+    description: event.description,
+    category: event.category || "Community",
+    link: event.link,
+    featured: event.featured || false,
+  }));
+
+  // Get unique categories
+  const categories = ["All", ...new Set(transformedEvents.map((e) => e.category))];
+
+  return json({ events: transformedEvents, categories });
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -17,14 +41,12 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-// Get unique categories from events
-const categories = ["All", ...new Set(mockEvents.map((e) => e.category))];
-
 export default function Calendar() {
+  const { events, categories } = useLoaderData<typeof loader>();
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Sort events by date
-  const sortedEvents = [...mockEvents].sort(
+  const sortedEvents = [...events].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
@@ -109,13 +131,13 @@ export default function Calendar() {
             </div>
           ) : (
             <div className="space-y-12">
-              {Object.entries(eventsByMonth).map(([monthYear, events]) => (
+              {Object.entries(eventsByMonth).map(([monthYear, monthEvents]) => (
                 <div key={monthYear}>
                   <h2 className="font-serif font-bold text-heading-md text-primary mb-6 pb-2 border-b border-surface">
                     {monthYear}
                   </h2>
                   <div className="space-y-4">
-                    {events.map((event) => (
+                    {monthEvents.map((event) => (
                       <EventCard key={event.id} event={event} />
                     ))}
                   </div>

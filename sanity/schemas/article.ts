@@ -63,6 +63,13 @@ export default defineType({
       to: [{ type: 'category' }],
     }),
     defineField({
+      name: 'publication',
+      title: 'Publication',
+      type: 'reference',
+      to: [{ type: 'publication' }],
+      description: 'Which publication this article belongs to',
+    }),
+    defineField({
       name: 'publishedAt',
       title: 'Published At',
       type: 'datetime',

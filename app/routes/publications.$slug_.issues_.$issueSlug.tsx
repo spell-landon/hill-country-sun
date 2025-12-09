@@ -10,7 +10,8 @@ import {
   getPublicationBySlug,
   getIssueBySlug,
   getIssuesByPublication,
-} from "~/lib/mock-data";
+  urlFor,
+} from "~/lib/sanity.server";
 import { formatDate } from "~/lib/utils";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -20,24 +21,49 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     throw new Response("Publication and issue slugs required", { status: 400 });
   }
 
-  const publication = getPublicationBySlug(slug);
+  const publication = await getPublicationBySlug(slug);
 
   if (!publication) {
     throw new Response("Publication not found", { status: 404 });
   }
 
-  const issue = getIssueBySlug(issueSlug);
+  const issue = await getIssueBySlug(issueSlug);
 
-  if (!issue || issue.publicationSlug !== slug) {
+  if (!issue || issue.publication?.slug?.current !== slug) {
     throw new Response("Issue not found", { status: 404 });
   }
 
   // Get related issues (other issues from same publication, excluding current)
-  const relatedIssues = getIssuesByPublication(slug)
-    .filter((i) => i.id !== issue.id)
-    .slice(0, 3);
+  const allIssues = await getIssuesByPublication(slug);
+  const relatedIssues = allIssues
+    .filter((i) => i._id !== issue._id)
+    .slice(0, 3)
+    .map((i) => ({
+      id: i._id,
+      title: i.title,
+      slug: i.slug.current,
+      coverImage: i.coverImage ? urlFor(i.coverImage).width(400).url() : "",
+      publishedAt: i.publishedAt,
+      isCurrent: i.isCurrent || false,
+    }));
 
-  return json({ publication, issue, relatedIssues });
+  // Transform data for component
+  const transformedPublication = {
+    name: publication.name,
+    slug: publication.slug.current,
+  };
+
+  const transformedIssue = {
+    id: issue._id,
+    title: issue.title,
+    slug: issue.slug.current,
+    coverImage: issue.coverImage ? urlFor(issue.coverImage).width(600).url() : "",
+    issuuEmbedUrl: issue.issuuEmbedUrl || "",
+    publishedAt: issue.publishedAt,
+    isCurrent: issue.isCurrent || false,
+  };
+
+  return json({ publication: transformedPublication, issue: transformedIssue, relatedIssues });
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {

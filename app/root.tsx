@@ -21,8 +21,7 @@ export const links: LinksFunction = () => [
     crossOrigin: "anonymous",
   },
   { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
-  { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
-  { rel: "apple-touch-icon", href: "/logo192.png" },
+  { rel: "manifest", href: "/manifest.json" },
 ];
 
 export const meta: MetaFunction = () => {
