@@ -10,7 +10,8 @@
     "typecheck": "tsc",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "sanity": "cd sanity && sanity dev",
-    "sanity:migrate": "tsx sanity/scripts/migrate-mock-data.ts"
+    "sanity:migrate": "tsx sanity/scripts/migrate-mock-data.ts",
+    "sanity:delete-all": "tsx sanity/scripts/delete-all-data.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

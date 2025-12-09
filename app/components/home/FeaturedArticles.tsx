@@ -7,12 +7,24 @@ import { ArrowRight, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { SectionHeading } from "~/components/ui/SectionHeading";
 import { Button } from "~/components/ui/Button";
-import type { Article } from "~/lib/mock-data";
-import { getPublicationBySlug } from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
+interface FeaturedArticle {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  mainImage: string;
+  category: string;
+  publishedAt: string;
+  publication?: {
+    name: string;
+    slug: string;
+  };
+}
+
 interface FeaturedArticlesProps {
-  articles: Article[];
+  articles: FeaturedArticle[];
 }
 
 export function FeaturedArticles({ articles }: FeaturedArticlesProps) {
@@ -121,64 +133,61 @@ export function FeaturedArticles({ articles }: FeaturedArticlesProps) {
               msOverflowStyle: "none",
             }}
           >
-            {articles.map((article, index) => {
-              const publication = getPublicationBySlug(article.publication);
-              return (
-                <motion.article
-                  key={article.id}
-                  className="group flex-shrink-0 w-[85%] sm:w-[45%] lg:w-[calc(33.333%-1rem)] snap-start"
-                  initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
-                  whileInView={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
+            {articles.map((article, index) => (
+              <motion.article
+                key={article.id}
+                className="group flex-shrink-0 w-[85%] sm:w-[45%] lg:w-[calc(33.333%-1rem)] snap-start"
+                initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+                whileInView={shouldReduceMotion ? {} : { opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+              >
+                <Link
+                  to={`/articles/${article.slug}`}
+                  className="block h-full"
                 >
-                  <Link
-                    to={`/articles/${article.slug}`}
-                    className="block h-full"
-                  >
-                    <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
-                      <img
-                        src={article.mainImage}
-                        alt=""
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:group-hover:scale-100"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                      {/* Publication Badge */}
-                      {publication && (
-                        <Link
-                          to={`/publications/${publication.slug}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-3 left-3 bg-primary/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-primary transition-colors"
-                        >
-                          {publication.name}
-                        </Link>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6">
-                        <Link
-                          to={`/articles?category=${encodeURIComponent(article.category)}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-block bg-secondary text-primary text-xs font-semibold px-2.5 py-1 rounded-full mb-3 hover:bg-secondary-400 transition-colors"
-                        >
-                          {article.category}
-                        </Link>
-                        <h3 className="font-serif font-bold text-lg sm:text-xl md:text-2xl text-white mb-2 group-hover:text-secondary transition-colors line-clamp-2">
-                          {article.title}
-                        </h3>
-                        <p className="text-white/80 text-sm mb-3 line-clamp-2 hidden sm:block">
-                          {article.excerpt}
-                        </p>
-                        <div className="flex items-center gap-2 text-white/60 text-xs sm:text-sm">
-                          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
-                          <time dateTime={article.publishedAt}>
-                            {formatDate(article.publishedAt)}
-                          </time>
-                        </div>
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
+                    <img
+                      src={article.mainImage}
+                      alt=""
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:group-hover:scale-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    {/* Publication Badge */}
+                    {article.publication && (
+                      <Link
+                        to={`/publications/${article.publication.slug}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-3 left-3 bg-primary/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded hover:bg-primary transition-colors"
+                      >
+                        {article.publication.name}
+                      </Link>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 md:p-6">
+                      <Link
+                        to={`/articles?category=${encodeURIComponent(article.category)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-block bg-secondary text-primary text-xs font-semibold px-2.5 py-1 rounded-full mb-3 hover:bg-secondary-400 transition-colors"
+                      >
+                        {article.category}
+                      </Link>
+                      <h3 className="font-serif font-bold text-lg sm:text-xl md:text-2xl text-white mb-2 group-hover:text-secondary transition-colors line-clamp-2">
+                        {article.title}
+                      </h3>
+                      <p className="text-white/80 text-sm mb-3 line-clamp-2 hidden sm:block">
+                        {article.excerpt}
+                      </p>
+                      <div className="flex items-center gap-2 text-white/60 text-xs sm:text-sm">
+                        <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                        <time dateTime={article.publishedAt}>
+                          {formatDate(article.publishedAt)}
+                        </time>
                       </div>
                     </div>
-                  </Link>
-                </motion.article>
-              );
-            })}
+                  </div>
+                </Link>
+              </motion.article>
+            ))}
           </div>
         </div>
       </Container>

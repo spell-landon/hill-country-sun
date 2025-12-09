@@ -44,6 +44,30 @@ export default defineType({
           type: 'text',
           rows: 2,
         },
+        {
+          name: 'hours',
+          title: 'Business Hours',
+          type: 'string',
+          description: 'e.g., Mon-Fri: 9am - 5pm',
+        },
+      ],
+    }),
+    defineField({
+      name: 'footer',
+      title: 'Footer',
+      type: 'object',
+      fields: [
+        {
+          name: 'tagline',
+          title: 'Tagline',
+          type: 'string',
+          description: 'Short text shown in footer',
+        },
+        {
+          name: 'copyrightText',
+          title: 'Copyright Text',
+          type: 'string',
+        },
       ],
     }),
     defineField({

@@ -53,7 +53,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     category: article.category?.title || 'Uncategorized',
     publishedAt: article.publishedAt,
     featured: article.featured || false,
-    publication: article.publication?.slug?.current || 'hill-country-sun',
+    publication: article.publication
+      ? { name: article.publication.name, slug: article.publication.slug.current }
+      : null,
   }));
 
   // Build filter options

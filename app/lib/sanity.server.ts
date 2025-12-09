@@ -315,8 +315,9 @@ export async function getIssueBySlug(slug: string): Promise<SanityIssue | null> 
 
 export async function getCurrentIssue(publicationSlug?: string): Promise<SanityIssue | null> {
   if (publicationSlug) {
+    // Get most recent issue for a specific publication
     return client.fetch(`
-      *[_type == "issue" && isCurrent == true && publication->slug.current == $publicationSlug][0] {
+      *[_type == "issue" && publication->slug.current == $publicationSlug] | order(publishedAt desc)[0] {
         _id,
         title,
         slug,
@@ -328,8 +329,9 @@ export async function getCurrentIssue(publicationSlug?: string): Promise<SanityI
       }
     `, { publicationSlug });
   }
+  // Get most recent issue across all publications
   return client.fetch(`
-    *[_type == "issue" && isCurrent == true][0] {
+    *[_type == "issue"] | order(publishedAt desc)[0] {
       _id,
       title,
       slug,
@@ -394,4 +396,161 @@ export async function getArticleYears(): Promise<number[]> {
   `);
   const years = dates.map((date: string) => new Date(date).getFullYear());
   return [...new Set(years)].sort((a: number, b: number) => b - a);
+}
+
+// About Page queries
+export interface SanityAboutPage {
+  _id: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  missionTitle: string;
+  missionContent: any[]; // Portable Text
+  storyTitle: string;
+  storyContent: any[]; // Portable Text
+  storyImage: SanityImageSource & { alt?: string };
+  foundedYear: string;
+  teamTitle: string;
+  teamSubtitle: string;
+  teamMembers: {
+    _key: string;
+    name: string;
+    role: string;
+    email?: string;
+    image: SanityImageSource;
+    bio: string;
+  }[];
+  stats: {
+    _key: string;
+    value: string;
+    label: string;
+  }[];
+}
+
+export async function getAboutPage(): Promise<SanityAboutPage | null> {
+  return client.fetch(`
+    *[_type == "aboutPage"][0] {
+      _id,
+      heroTitle,
+      heroSubtitle,
+      missionTitle,
+      missionContent,
+      storyTitle,
+      storyContent,
+      storyImage,
+      foundedYear,
+      teamTitle,
+      teamSubtitle,
+      teamMembers,
+      stats
+    }
+  `);
+}
+
+// Contact Page queries
+export interface SanityContactPage {
+  _id: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  formTitle: string;
+  contactInfo: {
+    _key: string;
+    type: 'email' | 'phone' | 'location' | 'hours';
+    label: string;
+    value: string;
+    href?: string;
+  }[];
+  inquiryTypes: {
+    _key: string;
+    value: string;
+    label: string;
+  }[];
+  successTitle: string;
+  successMessage: string;
+}
+
+export async function getContactPage(): Promise<SanityContactPage | null> {
+  return client.fetch(`
+    *[_type == "contactPage"][0] {
+      _id,
+      heroTitle,
+      heroSubtitle,
+      formTitle,
+      contactInfo,
+      inquiryTypes,
+      successTitle,
+      successMessage
+    }
+  `);
+}
+
+// Site Settings queries
+export interface SanitySiteSettings {
+  _id: string;
+  title: string;
+  description: string;
+  logo?: SanityImageSource;
+  contact: {
+    email?: string;
+    phone?: string;
+    address?: string;
+    hours?: string;
+  };
+  footer?: {
+    tagline?: string;
+    copyrightText?: string;
+  };
+  social: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+  publisher?: {
+    name?: string;
+    email?: string;
+  };
+  editor?: {
+    name?: string;
+    email?: string;
+  };
+  advertisingEmail?: string;
+  foundedYear?: number;
+}
+
+export async function getSiteSettings(): Promise<SanitySiteSettings | null> {
+  return client.fetch(`
+    *[_type == "siteSettings"][0] {
+      _id,
+      title,
+      description,
+      logo,
+      contact,
+      footer,
+      social,
+      publisher,
+      editor,
+      advertisingEmail,
+      foundedYear
+    }
+  `);
+}
+
+// Page queries (for legal pages like Privacy, Terms, etc.)
+export interface SanityPage {
+  _id: string;
+  title: string;
+  slug: { current: string };
+  lastUpdated?: string;
+  content: any[]; // Portable Text
+}
+
+export async function getPageBySlug(slug: string): Promise<SanityPage | null> {
+  return client.fetch(`
+    *[_type == "page" && slug.current == $slug][0] {
+      _id,
+      title,
+      slug,
+      lastUpdated,
+      content
+    }
+  `, { slug });
 }

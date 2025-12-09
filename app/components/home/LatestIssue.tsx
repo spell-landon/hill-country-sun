@@ -3,14 +3,24 @@ import { BookOpen, ArrowRight } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { SectionHeading } from "~/components/ui/SectionHeading";
 import { Button } from "~/components/ui/Button";
-import type { MagazineIssue } from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
+interface LatestIssueData {
+  id: string;
+  title: string;
+  slug: string;
+  coverImage: string;
+  publishedAt: string;
+  publicationSlug?: string;
+}
+
 interface LatestIssueProps {
-  issue: MagazineIssue;
+  issue: LatestIssueData;
 }
 
 export function LatestIssue({ issue }: LatestIssueProps) {
+  const publicationSlug = issue.publicationSlug || "hill-country-sun";
+
   return (
     <section className="py-16 md:py-24 bg-surface">
       <Container size="wide">
@@ -22,7 +32,7 @@ export function LatestIssue({ issue }: LatestIssueProps) {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Magazine Cover */}
           <Link
-            to={`/publications/hill-country-sun/issues/${issue.slug}`}
+            to={`/publications/${publicationSlug}/issues/${issue.slug}`}
             className="group relative block overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow"
           >
             <div className="aspect-[3/4] relative">
@@ -72,11 +82,11 @@ export function LatestIssue({ issue }: LatestIssueProps) {
             </ul>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button to={`/publications/hill-country-sun/issues/${issue.slug}`} variant="primary" size="lg">
+              <Button to={`/publications/${publicationSlug}/issues/${issue.slug}`} variant="primary" size="lg">
                 Read Now
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </Button>
-              <Button to="/publications/hill-country-sun/issues" variant="outline" size="lg">
+              <Button to={`/publications/${publicationSlug}/issues`} variant="outline" size="lg">
                 View All Issues
               </Button>
             </div>

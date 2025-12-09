@@ -1,10 +1,12 @@
-import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
+import type { MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, useActionData, useNavigation } from "@remix-run/react";
+import { Form, useActionData, useNavigation, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
+import { CopyEmail, CopyPhone } from "~/components/ui/CopyEmail";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from "lucide-react";
+import { getContactPage, getPublications } from "~/lib/sanity.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -16,6 +18,43 @@ export const meta: MetaFunction = () => {
     },
   ];
 };
+
+// Default data (fallbacks if Sanity data not available)
+const defaultContactInfo = [
+  { type: "email" as const, label: "Email", value: "info@hillcountrysun.com", href: "mailto:info@hillcountrysun.com" },
+  { type: "phone" as const, label: "Phone", value: "(512) 555-1234", href: "tel:+15125551234" },
+  { type: "location" as const, label: "Location", value: "Wimberley, Texas" },
+  { type: "hours" as const, label: "Hours", value: "Mon-Fri: 9am - 5pm" },
+];
+
+const defaultInquiryTypes = [
+  { value: "general", label: "General Contact" },
+  { value: "event", label: "Submit Event" },
+  { value: "advertising", label: "Advertising Inquiry" },
+  { value: "other", label: "Other" },
+];
+
+const iconMap = {
+  email: Mail,
+  phone: Phone,
+  location: MapPin,
+  hours: Clock,
+};
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const [contactPage, publications] = await Promise.all([
+    getContactPage(),
+    getPublications(),
+  ]);
+
+  return json({
+    contactPage,
+    publications: publications.map((pub) => ({
+      value: pub.slug.current,
+      label: pub.name,
+    })),
+  });
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
@@ -54,50 +93,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return json({ success: true });
 };
 
-const contactInfo = [
-  {
-    icon: Mail,
-    label: "Email",
-    value: "info@hillcountrysun.com",
-    href: "mailto:info@hillcountrysun.com",
-  },
-  {
-    icon: Phone,
-    label: "Phone",
-    value: "(512) 555-1234",
-    href: "tel:+15125551234",
-  },
-  {
-    icon: MapPin,
-    label: "Location",
-    value: "Wimberley, Texas",
-  },
-  {
-    icon: Clock,
-    label: "Hours",
-    value: "Mon-Fri: 9am - 5pm",
-  },
-];
-
-const inquiryTypes = [
-  { value: "general", label: "General Contact" },
-  { value: "event", label: "Submit Event" },
-  { value: "advertising", label: "Advertising Inquiry" },
-  { value: "other", label: "Other" },
-];
-
-const publications = [
-  { value: "hcs", label: "Hill Country Sun" },
-  { value: "wtw", label: "Welcome to Wimberley" },
-  { value: "rrg", label: "River Region Guide" },
-  { value: "hg", label: "Hunting Guide" },
-];
-
 export default function Contact() {
+  const { contactPage, publications } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const [inquiryType, setInquiryType] = useState("general");
+
+  // Use Sanity data or fall back to defaults
+  const heroTitle = contactPage?.heroTitle || "Contact Us";
+  const heroSubtitle = contactPage?.heroSubtitle || "Have a question, story tip, event to submit, or want to advertise with us? We'd love to hear from you.";
+  const formTitle = contactPage?.formTitle || "Send a Message";
+  const contactInfo = contactPage?.contactInfo || defaultContactInfo;
+  const inquiryTypes = contactPage?.inquiryTypes || defaultInquiryTypes;
+  const successTitle = contactPage?.successTitle || "Message Sent!";
+  const successMessage = contactPage?.successMessage || "Thank you for reaching out. We'll get back to you as soon as possible.";
 
   return (
     <>
@@ -106,11 +116,10 @@ export default function Contact() {
         <Container size="wide">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="font-serif font-bold text-display-sm md:text-display-md text-white mb-4">
-              Contact Us
+              {heroTitle}
             </h1>
             <p className="text-primary-200 text-body-lg">
-              Have a question, story tip, event to submit, or want to advertise with us?
-              We'd love to hear from you.
+              {heroSubtitle}
             </p>
           </div>
         </Container>
@@ -126,35 +135,36 @@ export default function Contact() {
                 Get in Touch
               </h2>
               <div className="space-y-6">
-                {contactInfo.map((item) => {
-                  const Icon = item.icon;
-                  const content = (
-                    <div className="flex items-start gap-4">
+                {contactInfo.map((item, index) => {
+                  const Icon = iconMap[item.type] || Mail;
+
+                  return (
+                    <div key={item._key || index} className="flex items-start gap-4">
                       <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Icon className="h-5 w-5 text-secondary" aria-hidden="true" />
                       </div>
                       <div>
                         <p className="text-body-sm text-text-muted">{item.label}</p>
-                        <p className="text-body-md text-text font-medium">
-                          {item.value}
-                        </p>
+                        {item.type === "email" ? (
+                          <CopyEmail
+                            email={item.value}
+                            className="text-body-md text-text font-medium hover:text-primary"
+                            showIcon={false}
+                          />
+                        ) : item.type === "phone" ? (
+                          <CopyPhone
+                            phone={item.value}
+                            className="text-body-md text-text font-medium hover:text-primary"
+                            showIcon={false}
+                          />
+                        ) : (
+                          <p className="text-body-md text-text font-medium">
+                            {item.value}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
-
-                  if (item.href) {
-                    return (
-                      <a
-                        key={item.label}
-                        href={item.href}
-                        className="block hover:bg-surface rounded-lg p-2 -m-2 transition-colors"
-                      >
-                        {content}
-                      </a>
-                    );
-                  }
-
-                  return <div key={item.label}>{content}</div>;
                 })}
               </div>
 
@@ -164,13 +174,12 @@ export default function Contact() {
                   Our Publications
                 </h3>
                 <p className="text-body-sm text-text-muted mb-4">
-                  We publish four regional magazines serving the Hill Country community:
+                  We publish regional magazines serving the Hill Country community:
                 </p>
                 <ul className="text-body-sm text-text space-y-2">
-                  <li>• Hill Country Sun</li>
-                  <li>• Welcome to Wimberley</li>
-                  <li>• River Region Guide</li>
-                  <li>• Hunting Guide</li>
+                  {publications.map((pub) => (
+                    <li key={pub.value}>• {pub.label}</li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -184,11 +193,10 @@ export default function Contact() {
                       <CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
                     </div>
                     <h3 className="font-serif font-bold text-heading-lg text-primary mb-3">
-                      Message Sent!
+                      {successTitle}
                     </h3>
                     <p className="text-text-muted text-body-md mb-6">
-                      Thank you for reaching out. We'll get back to you as soon as
-                      possible.
+                      {successMessage}
                     </p>
                     <Button to="/" variant="primary" size="md">
                       Return Home
@@ -197,7 +205,7 @@ export default function Contact() {
                 ) : (
                   <>
                     <h2 className="font-serif font-bold text-heading-lg text-primary mb-6">
-                      Send a Message
+                      {formTitle}
                     </h2>
 
                     <Form method="post" className="space-y-6">

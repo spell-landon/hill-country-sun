@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
-import { Mail, Phone, MapPin, Facebook, Instagram } from "lucide-react";
+import { MapPin, Facebook, Instagram } from "lucide-react";
 import { Container } from "~/components/ui/Container";
+import { CopyEmail, CopyPhone } from "~/components/ui/CopyEmail";
 
 const footerLinks = {
   explore: [
@@ -49,20 +50,14 @@ export function Footer() {
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <span>Wimberley, Texas</span>
               </div>
-              <a
-                href="mailto:info@hillcountrysun.com"
-                className="flex items-center gap-2 text-primary-200 hover:text-white transition-colors"
-              >
-                <Mail className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                <span className="truncate">info@hillcountrysun.com</span>
-              </a>
-              <a
-                href="tel:+15125551234"
-                className="flex items-center gap-2 text-primary-200 hover:text-white transition-colors"
-              >
-                <Phone className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                <span>(512) 555-1234</span>
-              </a>
+              <CopyEmail
+                email="info@hillcountrysun.com"
+                className="text-primary-200 hover:text-white"
+              />
+              <CopyPhone
+                phone="(512) 847-5162"
+                className="text-primary-200 hover:text-white"
+              />
             </address>
           </div>
 

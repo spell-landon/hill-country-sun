@@ -49,7 +49,9 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     category: article.category?.title || "Uncategorized",
     publishedAt: article.publishedAt,
     featured: article.featured || false,
-    publication: article.publication?.slug?.current || "hill-country-sun",
+    publication: article.publication
+      ? { name: article.publication.name, slug: article.publication.slug.current }
+      : null,
   }));
 
   return json({ author: transformedAuthor, articles: transformedArticles });
@@ -118,7 +120,7 @@ export default function AuthorPage() {
                   View All Articles ({articles.length})
                 </Button>
                 <Button
-                  href={`mailto:contact@hillcountrysun.com?subject=Message for ${author.name}`}
+                  to={`/contact?subject=Message for ${encodeURIComponent(author.name)}`}
                   variant="ghost"
                   size="sm"
                 >

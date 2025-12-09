@@ -1,10 +1,20 @@
-import { Link } from "@remix-run/react";
 import { MapPin, ExternalLink } from "lucide-react";
-import type { Event } from "~/lib/mock-data";
 import { formatDateRange } from "~/lib/utils";
 
+interface EventCardEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  endDate?: string;
+  location: string;
+  link?: string;
+  image?: string;
+  category: string;
+}
+
 interface EventCardProps {
-  event: Event;
+  event: EventCardEvent;
 }
 
 export function EventCard({ event }: EventCardProps) {

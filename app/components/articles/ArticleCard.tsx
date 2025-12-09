@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { Calendar, User, BookOpen } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import {
   Card,
   CardImage,
@@ -8,12 +8,28 @@ import {
   CardDescription,
   CardMeta,
 } from "~/components/ui/Card";
-import type { Article } from "~/lib/mock-data";
-import { getPublicationBySlug } from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
+interface ArticleCardArticle {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  mainImage: string;
+  author: {
+    name: string;
+    image?: string;
+  };
+  category: string;
+  publishedAt: string;
+  publication?: string | {
+    name: string;
+    slug: string;
+  };
+}
+
 interface ArticleCardProps {
-  article: Article;
+  article: ArticleCardArticle;
   variant?: "default" | "horizontal";
 }
 
@@ -26,7 +42,13 @@ function slugify(text: string): string {
 
 export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
   const authorSlug = slugify(article.author.name);
-  const publication = getPublicationBySlug(article.publication);
+
+  // Handle publication - can be string slug or object with name/slug
+  const publication = typeof article.publication === 'object'
+    ? article.publication
+    : article.publication
+      ? { name: article.publication, slug: article.publication }
+      : null;
 
   if (variant === "horizontal") {
     return (

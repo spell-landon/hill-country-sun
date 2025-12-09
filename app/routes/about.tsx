@@ -1,7 +1,48 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { PortableText } from "@portabletext/react";
 import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
+import { CopyEmail } from "~/components/ui/CopyEmail";
 import { Mail, Award, Users, Newspaper } from "lucide-react";
+import { getAboutPage, urlFor } from "~/lib/sanity.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const aboutPage = await getAboutPage();
+
+  if (!aboutPage) {
+    // Return fallback data if no About page exists in Sanity yet
+    return json({
+      aboutPage: null,
+      fallback: true,
+    });
+  }
+
+  // Transform data for component
+  const transformedData = {
+    heroTitle: aboutPage.heroTitle,
+    heroSubtitle: aboutPage.heroSubtitle,
+    missionTitle: aboutPage.missionTitle,
+    missionContent: aboutPage.missionContent,
+    storyTitle: aboutPage.storyTitle,
+    storyContent: aboutPage.storyContent,
+    storyImage: aboutPage.storyImage ? urlFor(aboutPage.storyImage).width(800).url() : "",
+    foundedYear: aboutPage.foundedYear,
+    teamTitle: aboutPage.teamTitle,
+    teamSubtitle: aboutPage.teamSubtitle,
+    teamMembers: aboutPage.teamMembers?.map((member) => ({
+      name: member.name,
+      role: member.role,
+      email: member.email,
+      image: member.image ? urlFor(member.image).width(400).url() : "",
+      bio: member.bio,
+    })) || [],
+    stats: aboutPage.stats || [],
+  };
+
+  return json({ aboutPage: transformedData, fallback: false });
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -14,28 +55,44 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-const team = [
-  {
-    name: "Julie Harrington",
-    role: "Publisher",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
-    bio: "Julie has been at the helm of the Hill Country Sun for over 15 years, bringing her passion for local journalism and community connection to every issue.",
+// Portable Text components for rendering
+const portableTextComponents = {
+  block: {
+    normal: ({ children }: any) => <p className="mb-4">{children}</p>,
+    blockquote: ({ children }: any) => (
+      <blockquote className="text-heading-md md:text-heading-lg text-text font-serif italic">
+        {children}
+      </blockquote>
+    ),
   },
-  {
-    name: "Melissa Ball",
-    role: "Editor",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80",
-    bio: "Melissa oversees all editorial content, ensuring each story captures the essence of Hill Country life while maintaining the highest standards of journalism.",
-  },
-];
+};
 
-const stats = [
-  { label: "Years Serving", value: "35+", icon: Award },
-  { label: "Monthly Readers", value: "50K+", icon: Users },
-  { label: "Issues Published", value: "400+", icon: Newspaper },
-];
+// Icon mapping for stats
+const statIcons: Record<string, typeof Award> = {
+  "Years Serving": Award,
+  "Monthly Readers": Users,
+  "Issues Published": Newspaper,
+};
 
 export default function About() {
+  const { aboutPage, fallback } = useLoaderData<typeof loader>();
+
+  // Fallback content if no Sanity data
+  if (fallback || !aboutPage) {
+    return (
+      <div className="py-16 text-center">
+        <Container size="narrow">
+          <h1 className="font-serif font-bold text-display-sm text-primary mb-4">
+            About Page Coming Soon
+          </h1>
+          <p className="text-text-muted">
+            Content is being set up in our CMS. Please check back later.
+          </p>
+        </Container>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Hero Section */}
@@ -51,37 +108,38 @@ export default function About() {
         <Container size="wide" className="relative">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="font-serif font-bold text-display-sm md:text-display-md text-white mb-6">
-              About Hill Country Sun
+              {aboutPage.heroTitle}
             </h1>
             <p className="text-primary-200 text-body-lg">
-              For over three decades, we've been the voice of Wimberley and the
-              River Region, telling the stories that matter to our community.
+              {aboutPage.heroSubtitle}
             </p>
           </div>
         </Container>
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-surface">
-        <Container size="wide">
-          <div className="grid grid-cols-3 gap-4 md:gap-8">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.label} className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-secondary/20 rounded-full mb-3">
-                    <Icon className="h-6 w-6 md:h-8 md:w-8 text-secondary" aria-hidden="true" />
+      {aboutPage.stats && aboutPage.stats.length > 0 && (
+        <section className="py-12 bg-surface">
+          <Container size="wide">
+            <div className="grid grid-cols-3 gap-4 md:gap-8">
+              {aboutPage.stats.map((stat) => {
+                const Icon = statIcons[stat.label] || Award;
+                return (
+                  <div key={stat._key || stat.label} className="text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-secondary/20 rounded-full mb-3">
+                      <Icon className="h-6 w-6 md:h-8 md:w-8 text-secondary" aria-hidden="true" />
+                    </div>
+                    <p className="font-serif font-bold text-heading-lg md:text-display-sm text-primary">
+                      {stat.value}
+                    </p>
+                    <p className="text-body-sm text-text-muted">{stat.label}</p>
                   </div>
-                  <p className="font-serif font-bold text-heading-lg md:text-display-sm text-primary">
-                    {stat.value}
-                  </p>
-                  <p className="text-body-sm text-text-muted">{stat.label}</p>
-                </div>
-              );
-            })}
-          </div>
-        </Container>
-      </section>
+                );
+              })}
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Our Story Section */}
       <section className="py-16 md:py-24">
@@ -89,101 +147,102 @@ export default function About() {
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <h2 className="font-serif font-bold text-display-sm text-primary mb-4 relative inline-block">
-                Our Story
+                {aboutPage.storyTitle}
                 <span className="absolute -bottom-2 left-0 w-16 h-1 bg-secondary rounded-full" />
               </h2>
               <div className="mt-6 space-y-4 text-body-md text-text-muted">
-                <p>
-                  The Hill Country Sun was founded in 1990 with a simple mission:
-                  to connect the communities of Wimberley and the River Region
-                  through quality local journalism.
-                </p>
-                <p>
-                  What started as a small community newsletter has grown into the
-                  region's most trusted source for local news, events, and stories.
-                  We've watched Wimberley grow and change over the decades, and
-                  we've been proud to document that journey.
-                </p>
-                <p>
-                  Today, we continue that mission through our quarterly magazine,
-                  online articles, and community events calendar. We believe that
-                  local journalism matters—it's what keeps communities connected
-                  and informed.
-                </p>
+                {aboutPage.storyContent && (
+                  <PortableText value={aboutPage.storyContent} components={portableTextComponents} />
+                )}
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-[4/3] overflow-hidden rounded-xl shadow-lg">
-                <img
-                  src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80"
-                  alt="Newspaper printing"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-secondary rounded-lg flex items-center justify-center shadow-lg">
-                <span className="font-serif font-bold text-primary text-heading-md">
-                  1990
-                </span>
-              </div>
+              {aboutPage.storyImage && (
+                <>
+                  <div className="aspect-[4/3] overflow-hidden rounded-xl shadow-lg">
+                    <img
+                      src={aboutPage.storyImage}
+                      alt="Our Story"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {aboutPage.foundedYear && (
+                    <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-secondary rounded-lg flex items-center justify-center shadow-lg">
+                      <span className="font-serif font-bold text-primary text-heading-md">
+                        {aboutPage.foundedYear}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </Container>
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 md:py-24 bg-surface">
-        <Container size="narrow" className="text-center">
-          <h2 className="font-serif font-bold text-display-sm text-primary mb-6">
-            Our Mission
-          </h2>
-          <blockquote className="text-heading-md md:text-heading-lg text-text font-serif italic">
-            "To celebrate and preserve the unique character of the Texas Hill
-            Country by telling the stories of the people, places, and traditions
-            that make our region special."
-          </blockquote>
-        </Container>
-      </section>
+      {aboutPage.missionContent && (
+        <section className="py-16 md:py-24 bg-surface">
+          <Container size="narrow" className="text-center">
+            <h2 className="font-serif font-bold text-display-sm text-primary mb-6">
+              {aboutPage.missionTitle}
+            </h2>
+            <div className="text-heading-md md:text-heading-lg text-text font-serif italic">
+              <PortableText value={aboutPage.missionContent} components={portableTextComponents} />
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Team Section */}
-      <section className="py-16 md:py-24">
-        <Container size="wide">
-          <div className="text-center mb-12">
-            <h2 className="font-serif font-bold text-display-sm text-primary mb-4">
-              Meet Our Team
-            </h2>
-            <p className="text-body-lg text-text-muted max-w-2xl mx-auto">
-              The dedicated journalists and editors who bring you the Hill Country
-              Sun every quarter.
-            </p>
-          </div>
+      {aboutPage.teamMembers && aboutPage.teamMembers.length > 0 && (
+        <section className="py-16 md:py-24">
+          <Container size="wide">
+            <div className="text-center mb-12">
+              <h2 className="font-serif font-bold text-display-sm text-primary mb-4">
+                {aboutPage.teamTitle}
+              </h2>
+              <p className="text-body-lg text-text-muted max-w-2xl mx-auto">
+                {aboutPage.teamSubtitle}
+              </p>
+            </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {team.map((member) => (
-              <div
-                key={member.name}
-                className="bg-white rounded-xl p-6 shadow-sm border border-surface"
-              >
-                <div className="flex items-start gap-4">
-                  <img
-                    src={member.image}
-                    alt=""
-                    className="w-20 h-20 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="font-serif font-bold text-heading-sm text-primary">
-                      {member.name}
-                    </h3>
-                    <p className="text-secondary font-medium text-body-sm mb-2">
-                      {member.role}
-                    </p>
-                    <p className="text-body-sm text-text-muted">{member.bio}</p>
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {aboutPage.teamMembers.map((member) => (
+                <div
+                  key={member.name}
+                  className="bg-white rounded-xl p-6 shadow-sm border border-surface"
+                >
+                  <div className="flex items-start gap-4">
+                    {member.image && (
+                      <img
+                        src={member.image}
+                        alt=""
+                        className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div>
+                      <h3 className="font-serif font-bold text-heading-sm text-primary">
+                        {member.name}
+                      </h3>
+                      <p className="text-secondary font-medium text-body-sm mb-2">
+                        {member.role}
+                      </p>
+                      <p className="text-body-sm text-text-muted">{member.bio}</p>
+                      {member.email && (
+                        <CopyEmail
+                          email={member.email}
+                          className="text-body-sm text-primary hover:text-primary-600 mt-2"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Container>
-      </section>
+              ))}
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="py-16 md:py-24 bg-primary">

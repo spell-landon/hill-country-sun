@@ -44,6 +44,7 @@ const client: SanityClient = createClient({
 });
 
 // Store for created document IDs (for references)
+const publicationIds = new Map<string, string>();
 const authorIds = new Map<string, string>();
 const categoryIds = new Map<string, string>();
 
@@ -209,6 +210,7 @@ async function migrateArticles(): Promise<void> {
     // Get references
     const authorId = authorIds.get(article.author.name);
     const categoryId = categoryIds.get(article.category);
+    const publicationId = publicationIds.get(article.publication);
 
     const doc = {
       _type: "article",
@@ -227,6 +229,9 @@ async function migrateArticles(): Promise<void> {
         : undefined,
       category: categoryId
         ? { _type: "reference", _ref: categoryId }
+        : undefined,
+      publication: publicationId
+        ? { _type: "reference", _ref: publicationId }
         : undefined,
       publishedAt: new Date(article.publishedAt).toISOString(),
       featured: article.featured,
@@ -256,6 +261,9 @@ async function migrateIssues(): Promise<void> {
       `issue-${issue.slug}.jpg`
     );
 
+    // Get publication reference
+    const publicationId = publicationIds.get(issue.publicationSlug);
+
     const doc = {
       _type: "issue",
       title: issue.title,
@@ -269,6 +277,9 @@ async function migrateIssues(): Promise<void> {
       issuuEmbedUrl: issue.issuuEmbedUrl,
       publishedAt: new Date(issue.publishedAt).toISOString(),
       isCurrent: issue.isCurrent,
+      publication: publicationId
+        ? { _type: "reference", _ref: publicationId }
+        : undefined,
     };
 
     const result = await client.create(doc);
@@ -325,6 +336,7 @@ async function migratePublications(): Promise<void> {
     const existingId = await documentExists("publication", publication.slug);
     if (existingId) {
       console.log(`  ⏭️  Skipping (exists): ${publication.name}`);
+      publicationIds.set(publication.slug, existingId);
       continue;
     }
 
@@ -376,7 +388,332 @@ async function migratePublications(): Promise<void> {
     };
 
     const result = await client.create(doc);
+    publicationIds.set(publication.slug, result._id);
     console.log(`  ✅ Created: ${publication.name} (${result._id})`);
+  }
+}
+
+// ============================================================================
+// About Page Data
+// ============================================================================
+
+const aboutPageData = {
+  heroTitle: "About Hill Country Sun",
+  heroSubtitle: "For over three decades, we've been the voice of Wimberley and the River Region, telling the stories that matter to our community.",
+  missionTitle: "Our Mission",
+  missionContent: "To celebrate and preserve the unique character of the Texas Hill Country by telling the stories of the people, places, and traditions that make our region special.",
+  storyTitle: "Our Story",
+  storyContent: [
+    "The Hill Country Sun was founded in 1990 with a simple mission: to connect the communities of Wimberley and the River Region through quality local journalism.",
+    "What started as a small community newsletter has grown into the region's most trusted source for local news, events, and stories. We've watched Wimberley grow and change over the decades, and we've been proud to document that journey.",
+    "Today, we continue that mission through our quarterly magazine, online articles, and community events calendar. We believe that local journalism matters—it's what keeps communities connected and informed."
+  ],
+  storyImageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80",
+  foundedYear: "1990",
+  teamMembers: [
+    {
+      name: "Julie Harrington",
+      role: "Publisher",
+      email: "julie@hillcountrysun.com",
+      imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
+      bio: "Julie has been at the helm of the Hill Country Sun for over 15 years, bringing her passion for local journalism and community connection to every issue.",
+    },
+    {
+      name: "Melissa Ball",
+      role: "Editor",
+      email: "melissa@hillcountrysun.com",
+      imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80",
+      bio: "Melissa oversees all editorial content, ensuring each story captures the essence of Hill Country life while maintaining the highest standards of journalism.",
+    },
+  ],
+  stats: [
+    { value: "35+", label: "Years Serving" },
+    { value: "50K+", label: "Monthly Readers" },
+    { value: "400+", label: "Issues Published" },
+  ],
+};
+
+async function migrateAboutPage(): Promise<void> {
+  console.log("\n📄 Migrating About Page...");
+
+  // Check if already exists
+  const existing = await client.fetch(`*[_type == "aboutPage"][0]._id`);
+  if (existing) {
+    console.log(`  ⏭️  Skipping (exists): About Page`);
+    return;
+  }
+
+  // Upload story image
+  const storyImage = await uploadImageFromUrl(
+    aboutPageData.storyImageUrl,
+    "about-story.jpg"
+  );
+
+  // Upload team member images and build team array
+  const teamMembers = [];
+  for (let i = 0; i < aboutPageData.teamMembers.length; i++) {
+    const member = aboutPageData.teamMembers[i];
+    const memberImage = await uploadImageFromUrl(
+      member.imageUrl,
+      `team-${slugify(member.name)}.jpg`
+    );
+
+    teamMembers.push({
+      _type: "object",
+      _key: `team-${i}`,
+      name: member.name,
+      role: member.role,
+      email: member.email,
+      image: memberImage,
+      bio: member.bio,
+    });
+  }
+
+  // Build stats array
+  const stats = aboutPageData.stats.map((stat, i) => ({
+    _type: "object",
+    _key: `stat-${i}`,
+    value: stat.value,
+    label: stat.label,
+  }));
+
+  // Convert story content to portable text
+  const storyContentBlocks = aboutPageData.storyContent.map((paragraph, i) => ({
+    _type: "block",
+    _key: `block-${i}`,
+    style: "normal",
+    markDefs: [],
+    children: [
+      {
+        _type: "span",
+        _key: `span-${i}`,
+        text: paragraph,
+        marks: [],
+      },
+    ],
+  }));
+
+  const missionContentBlocks = [
+    {
+      _type: "block",
+      _key: "mission-0",
+      style: "normal",
+      markDefs: [],
+      children: [
+        {
+          _type: "span",
+          _key: "mission-span-0",
+          text: aboutPageData.missionContent,
+          marks: [],
+        },
+      ],
+    },
+  ];
+
+  const doc = {
+    _id: "aboutPage", // Fixed ID for singleton
+    _type: "aboutPage",
+    heroTitle: aboutPageData.heroTitle,
+    heroSubtitle: aboutPageData.heroSubtitle,
+    missionTitle: aboutPageData.missionTitle,
+    missionContent: missionContentBlocks,
+    storyTitle: aboutPageData.storyTitle,
+    storyContent: storyContentBlocks,
+    storyImage: storyImage ? { ...storyImage, alt: "Our Story" } : undefined,
+    foundedYear: aboutPageData.foundedYear,
+    teamTitle: "Meet Our Team",
+    teamSubtitle: "The dedicated journalists and editors who bring you the Hill Country Sun every quarter.",
+    teamMembers,
+    stats,
+  };
+
+  const result = await client.createOrReplace(doc);
+  console.log(`  ✅ Created: About Page (${result._id})`);
+}
+
+// ============================================================================
+// Contact Page Data
+// ============================================================================
+
+const contactPageData = {
+  heroTitle: "Contact Us",
+  heroSubtitle: "Have a question, story tip, event to submit, or want to advertise with us? We'd love to hear from you.",
+  formTitle: "Send a Message",
+  contactInfo: [
+    { type: "email", label: "Email", value: "info@hillcountrysun.com", href: "mailto:info@hillcountrysun.com" },
+    { type: "phone", label: "Phone", value: "(512) 847-5162", href: "tel:+15128475162" },
+    { type: "location", label: "Location", value: "Wimberley, Texas" },
+    { type: "hours", label: "Hours", value: "Mon-Fri: 9am - 5pm" },
+  ],
+  inquiryTypes: [
+    { value: "general", label: "General Contact" },
+    { value: "event", label: "Submit Event" },
+    { value: "advertising", label: "Advertising Inquiry" },
+    { value: "other", label: "Other" },
+  ],
+  successTitle: "Message Sent!",
+  successMessage: "Thank you for reaching out. We'll get back to you as soon as possible.",
+};
+
+async function migrateContactPage(): Promise<void> {
+  console.log("\n📧 Migrating Contact Page...");
+
+  const contactInfo = contactPageData.contactInfo.map((item, i) => ({
+    _type: "object",
+    _key: `contact-${i}`,
+    type: item.type,
+    label: item.label,
+    value: item.value,
+    href: item.href,
+  }));
+
+  const inquiryTypes = contactPageData.inquiryTypes.map((item, i) => ({
+    _type: "object",
+    _key: `inquiry-${i}`,
+    value: item.value,
+    label: item.label,
+  }));
+
+  const doc = {
+    _id: "contactPage",
+    _type: "contactPage",
+    heroTitle: contactPageData.heroTitle,
+    heroSubtitle: contactPageData.heroSubtitle,
+    formTitle: contactPageData.formTitle,
+    contactInfo,
+    inquiryTypes,
+    successTitle: contactPageData.successTitle,
+    successMessage: contactPageData.successMessage,
+  };
+
+  const result = await client.createOrReplace(doc);
+  console.log(`  ✅ Created: Contact Page (${result._id})`);
+}
+
+// ============================================================================
+// Site Settings Data
+// ============================================================================
+
+const siteSettingsData = {
+  title: "Hill Country Sun",
+  description: "Your source for local news, events, and stories from Wimberley and the Texas Hill Country region. Covering the River Region since 1990.",
+  contact: {
+    email: "info@hillcountrysun.com",
+    phone: "(512) 847-5162",
+    address: "Wimberley, Texas",
+    hours: "Mon-Fri: 9am - 5pm",
+  },
+  footer: {
+    tagline: "Your Hill Country Connection since 1990",
+    copyrightText: "Hill Country Sun. All rights reserved.",
+  },
+  social: {
+    facebook: "https://www.facebook.com/hillcountrysun",
+    instagram: "https://www.instagram.com/hillcountrysun",
+  },
+  publisher: {
+    name: "Linda Lee",
+    email: "publisher@hillcountrysun.com",
+  },
+  editor: {
+    name: "Cynthia Miller",
+    email: "editor@hillcountrysun.com",
+  },
+  advertisingEmail: "advertising@hillcountrysun.com",
+  foundedYear: 1990,
+};
+
+async function migrateSiteSettings(): Promise<void> {
+  console.log("\n⚙️  Migrating Site Settings...");
+
+  const doc = {
+    _id: "siteSettings",
+    _type: "siteSettings",
+    title: siteSettingsData.title,
+    description: siteSettingsData.description,
+    contact: siteSettingsData.contact,
+    footer: siteSettingsData.footer,
+    social: siteSettingsData.social,
+    publisher: siteSettingsData.publisher,
+    editor: siteSettingsData.editor,
+    advertisingEmail: siteSettingsData.advertisingEmail,
+    foundedYear: siteSettingsData.foundedYear,
+  };
+
+  const result = await client.createOrReplace(doc);
+  console.log(`  ✅ Created: Site Settings (${result._id})`);
+}
+
+// ============================================================================
+// Legal Pages Data
+// ============================================================================
+
+const legalPagesData = [
+  {
+    title: "Privacy Policy",
+    slug: "privacy",
+    lastUpdated: "2024-01-15",
+    content: [
+      "Hill Country Sun is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website or use our services.",
+      "Information We Collect: We may collect personal information you provide directly to us, such as your name, email address, and phone number when you subscribe to our newsletter, submit a contact form, or interact with our services.",
+      "How We Use Your Information: We use the information we collect to provide, maintain, and improve our services, send you updates and marketing communications (with your consent), and respond to your inquiries.",
+      "Information Sharing: We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as required by law or to protect our rights.",
+      "Contact Us: If you have questions about this Privacy Policy, please contact us at info@hillcountrysun.com.",
+    ],
+  },
+  {
+    title: "Terms of Service",
+    slug: "terms",
+    lastUpdated: "2024-01-15",
+    content: [
+      "Welcome to Hill Country Sun. By accessing or using our website and services, you agree to be bound by these Terms of Service.",
+      "Use of Content: All content on this website, including articles, photographs, and graphics, is protected by copyright. You may not reproduce, distribute, or create derivative works without our express written permission.",
+      "User Conduct: You agree not to use our website for any unlawful purpose or in any way that could damage, disable, or impair the website.",
+      "Disclaimer: The information provided on this website is for general informational purposes only. We make no warranties about the accuracy or completeness of the information.",
+      "Limitation of Liability: Hill Country Sun shall not be liable for any damages arising from your use of or inability to use our website or services.",
+      "Changes to Terms: We reserve the right to modify these terms at any time. Continued use of the website constitutes acceptance of any changes.",
+      "Contact Us: If you have questions about these Terms, please contact us at info@hillcountrysun.com.",
+    ],
+  },
+];
+
+async function migrateLegalPages(): Promise<void> {
+  console.log("\n📜 Migrating Legal Pages...");
+
+  for (const page of legalPagesData) {
+    // Check if already exists
+    const existingId = await documentExists("page", page.slug);
+    if (existingId) {
+      console.log(`  ⏭️  Skipping (exists): ${page.title}`);
+      continue;
+    }
+
+    // Convert content paragraphs to portable text
+    const contentBlocks = page.content.map((paragraph, i) => ({
+      _type: "block",
+      _key: `block-${i}`,
+      style: "normal",
+      markDefs: [],
+      children: [
+        {
+          _type: "span",
+          _key: `span-${i}`,
+          text: paragraph,
+          marks: [],
+        },
+      ],
+    }));
+
+    const doc = {
+      _type: "page",
+      title: page.title,
+      slug: { _type: "slug", current: page.slug },
+      lastUpdated: page.lastUpdated,
+      content: contentBlocks,
+    };
+
+    const result = await client.create(doc);
+    console.log(`  ✅ Created: ${page.title} (${result._id})`);
   }
 }
 
@@ -391,21 +728,30 @@ async function main() {
 
   try {
     // Migrate in order of dependencies
+    // Publications FIRST so articles and issues can reference them
+    await migratePublications();
     await migrateAuthors();
     await migrateCategories();
     await migrateArticles();
     await migrateIssues();
     await migrateEvents();
-    await migratePublications();
+    await migrateAboutPage();
+    await migrateContactPage();
+    await migrateSiteSettings();
+    await migrateLegalPages();
 
     console.log("\n✅ Migration complete!");
     console.log("\nSummary:");
+    console.log(`  - Publications: ${publicationIds.size}`);
     console.log(`  - Authors: ${authorIds.size}`);
     console.log(`  - Categories: ${categoryIds.size}`);
     console.log(`  - Articles: ${mockArticles.length}`);
     console.log(`  - Issues: ${mockIssues.length}`);
     console.log(`  - Events: ${mockEvents.length}`);
-    console.log(`  - Publications: ${mockPublications.length}`);
+    console.log(`  - About Page: 1`);
+    console.log(`  - Contact Page: 1`);
+    console.log(`  - Site Settings: 1`);
+    console.log(`  - Legal Pages: ${legalPagesData.length}`);
   } catch (error) {
     console.error("\n❌ Migration failed:", error);
     process.exit(1);

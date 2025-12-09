@@ -1,17 +1,26 @@
 import { Link } from "@remix-run/react";
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
-import type { MagazineIssue } from "~/lib/mock-data";
 import { formatDate } from "~/lib/utils";
 
+interface IssueCardIssue {
+  id: string;
+  title: string;
+  slug: string;
+  coverImage: string;
+  publishedAt: string;
+  isCurrent?: boolean;
+  publicationSlug?: string;
+}
+
 interface IssueCardProps {
-  issue: MagazineIssue;
+  issue: IssueCardIssue;
   publicationSlug?: string;
 }
 
 export function IssueCard({ issue, publicationSlug }: IssueCardProps) {
   // Use the provided publicationSlug or fall back to the issue's publicationSlug
-  const pubSlug = publicationSlug || issue.publicationSlug;
+  const pubSlug = publicationSlug || issue.publicationSlug || "hill-country-sun";
   const issueUrl = `/publications/${pubSlug}/issues/${issue.slug}`;
 
   return (
