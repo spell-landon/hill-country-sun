@@ -32,13 +32,13 @@ export function Footer() {
           <div className="col-span-2 sm:col-span-2 md:col-span-1">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 font-serif font-bold text-xl sm:text-2xl mb-4"
+              className="inline-block mb-4"
             >
-              <svg className="w-6 h-6 text-secondary" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <circle cx="12" cy="12" r="5" />
-                <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              </svg>
-              Hill Country Sun
+              <img
+                src="/images/logo.png"
+                alt="Hill Country Sun"
+                className="h-10 sm:h-12 w-auto brightness-0 invert"
+              />
             </Link>
             <p className="text-primary-200 text-sm mb-6">
               Your trusted source for local news, events, and stories from

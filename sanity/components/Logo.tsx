@@ -1,0 +1,32 @@
+import React from 'react';
+
+// Sun icon for the Sanity Studio - matches the favicon design
+export function Logo() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Background */}
+      <rect width="32" height="32" rx="4" fill="#2D3E5F" />
+
+      {/* Sun circle */}
+      <circle cx="16" cy="16" r="7" fill="#FFFFFF" />
+
+      {/* Sun rays */}
+      <g stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round">
+        <line x1="16" y1="3" x2="16" y2="6" />
+        <line x1="16" y1="26" x2="16" y2="29" />
+        <line x1="3" y1="16" x2="6" y2="16" />
+        <line x1="26" y1="16" x2="29" y2="16" />
+        <line x1="6.8" y1="6.8" x2="9" y2="9" />
+        <line x1="23" y1="23" x2="25.2" y2="25.2" />
+        <line x1="6.8" y1="25.2" x2="9" y2="23" />
+        <line x1="23" y1="9" x2="25.2" y2="6.8" />
+      </g>
+    </svg>
+  );
+}

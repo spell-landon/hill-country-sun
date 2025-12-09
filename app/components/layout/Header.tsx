@@ -30,15 +30,14 @@ export function Header() {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 text-primary font-serif font-bold text-xl md:text-2xl"
+            className="flex items-center"
             aria-label="Hill Country Sun - Home"
           >
-            <svg className="w-6 h-6 md:w-8 md:h-8 text-secondary" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="12" r="5" />
-              <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
-            </svg>
-            <span className="hidden sm:inline">Hill Country Sun</span>
-            <span className="sm:hidden">HCS</span>
+            <img
+              src="/images/logo.png"
+              alt="Hill Country Sun"
+              className="h-8 sm:h-10 md:h-12 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
