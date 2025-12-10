@@ -91,15 +91,18 @@ export default defineType({
       media: 'coverImage',
       isCurrent: 'isCurrent',
       publishedAt: 'publishedAt',
+      publicationName: 'publication.name',
     },
     prepare(selection) {
-      const { isCurrent, publishedAt } = selection;
+      const { isCurrent, publishedAt, publicationName } = selection;
       const date = publishedAt
         ? new Date(publishedAt).toLocaleDateString()
         : '';
+      const parts = [publicationName, date].filter(Boolean);
+      const subtitle = isCurrent ? `Current • ${parts.join(' • ')}` : parts.join(' • ');
       return {
         ...selection,
-        subtitle: isCurrent ? `Current Issue • ${date}` : date,
+        subtitle,
       };
     },
   },

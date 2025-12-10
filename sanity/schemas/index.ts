@@ -6,9 +6,11 @@ import event from './event';
 import guide from './guide';
 import publication from './publication';
 import siteSettings from './siteSettings';
+import homePage from './homePage';
 import aboutPage from './aboutPage';
 import contactPage from './contactPage';
 import page from './page';
+import teamMember from './teamMember';
 import blockContent from './blockContent';
 
 export const schemaTypes = [
@@ -21,9 +23,11 @@ export const schemaTypes = [
   guide,
   publication,
   siteSettings,
+  homePage,
   aboutPage,
   contactPage,
   page,
+  teamMember,
   // Object types
   blockContent,
 ];

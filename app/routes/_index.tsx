@@ -9,6 +9,8 @@ import { QuickLinks } from "~/components/home/QuickLinks";
 import {
   getCurrentIssue,
   getFeaturedArticles,
+  getHomePage,
+  getPublications,
   urlFor,
 } from "~/lib/sanity.server";
 
@@ -34,9 +36,11 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const [currentIssue, featuredArticles] = await Promise.all([
+  const [currentIssue, featuredArticles, homePage, publications] = await Promise.all([
     getCurrentIssue(),
     getFeaturedArticles(),
+    getHomePage(),
+    getPublications(),
   ]);
 
   // Transform Sanity data to match component expectations
@@ -77,21 +81,55 @@ export async function loader({ request }: LoaderFunctionArgs) {
       : null,
   }));
 
+  // Transform publications for QuickLinks
+  const transformedPublications = publications.map((pub) => ({
+    title: pub.name,
+    description: pub.shortDescription || pub.description,
+    href: `/publications/${pub.slug.current}`,
+    image: pub.cardImage
+      ? urlFor(pub.cardImage).width(600).url()
+      : pub.heroImage
+        ? urlFor(pub.heroImage).width(600).url()
+        : "",
+  }));
+
+  // Transform home page data for Hero
+  const heroData = homePage
+    ? {
+        tagline: homePage.heroTagline,
+        heading: homePage.heroHeading,
+        description: homePage.heroDescription,
+        backgroundImage: homePage.heroBackgroundImage
+          ? urlFor(homePage.heroBackgroundImage).width(1600).url()
+          : undefined,
+        ctaPrimaryText: homePage.heroCtaPrimaryText,
+        ctaSecondaryText: homePage.heroCtaSecondaryText,
+        publicationsSectionTitle: homePage.publicationsSectionTitle,
+        publicationsSectionSubtitle: homePage.publicationsSectionSubtitle,
+      }
+    : null;
+
   return json({
     currentIssue: transformedIssue,
     featuredArticles: transformedArticles,
+    publications: transformedPublications,
+    heroData,
   });
 }
 
 export default function Index() {
-  const { currentIssue, featuredArticles } = useLoaderData<typeof loader>();
+  const { currentIssue, featuredArticles, publications, heroData } = useLoaderData<typeof loader>();
 
   return (
     <>
-      <Hero currentIssueSlug={currentIssue?.slug} />
+      <Hero currentIssueSlug={currentIssue?.slug} heroData={heroData} />
       {currentIssue && <LatestIssue issue={currentIssue} />}
       <FeaturedArticles articles={featuredArticles} />
-      <QuickLinks />
+      <QuickLinks
+        publications={publications}
+        title={heroData?.publicationsSectionTitle}
+        subtitle={heroData?.publicationsSectionSubtitle}
+      />
       <Newsletter />
     </>
   );

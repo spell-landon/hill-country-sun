@@ -2,17 +2,30 @@
 
 import { Link } from "@remix-run/react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Sun, MapPin, Fish, Target, ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { Container } from "~/components/ui/Container";
 import { SectionHeading } from "~/components/ui/SectionHeading";
 
-const publications = [
+interface Publication {
+  title: string;
+  description: string;
+  href: string;
+  image: string;
+}
+
+interface QuickLinksProps {
+  publications?: Publication[];
+  title?: string;
+  subtitle?: string;
+}
+
+// Fallback publications if none provided from Sanity
+const defaultPublications: Publication[] = [
   {
     title: "Hill Country Sun",
     description:
       "Your source for Hill Country news, events, and stories celebrating our vibrant community.",
     href: "/publications/hill-country-sun",
-    icon: Sun,
     image:
       "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
   },
@@ -21,7 +34,6 @@ const publications = [
     description:
       "Discover the charm of this Hill Country village. Find things to do, places to eat, and local tips.",
     href: "/publications/welcome-to-wimberley",
-    icon: MapPin,
     image:
       "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&q=80",
   },
@@ -30,7 +42,6 @@ const publications = [
     description:
       "Explore the best swimming holes, water activities, and riverside adventures in the area.",
     href: "/publications/river-region-guide",
-    icon: Fish,
     image:
       "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=600&q=80",
   },
@@ -39,13 +50,16 @@ const publications = [
     description:
       "Everything you need to know about hunting seasons, regulations, and ranches in the Hill Country.",
     href: "/publications/hunting-guide",
-    icon: Target,
     image:
       "https://images.unsplash.com/photo-1516655855035-d5215bcb5604?w=600&q=80",
   },
 ];
 
-export function QuickLinks() {
+const defaultTitle = "Explore Our Publications";
+const defaultSubtitle = "In-depth resources to help you make the most of the Hill Country.";
+
+export function QuickLinks({ publications, title, subtitle }: QuickLinksProps) {
+  const displayPublications = publications && publications.length > 0 ? publications : defaultPublications;
   const shouldReduceMotion = useReducedMotion();
 
   const containerVariants = {
@@ -72,8 +86,8 @@ export function QuickLinks() {
           transition={{ duration: 0.5 }}
         >
           <SectionHeading
-            title="Explore Our Publications"
-            subtitle="In-depth resources to help you make the most of the Hill Country."
+            title={title || defaultTitle}
+            subtitle={subtitle || defaultSubtitle}
             align="center"
           />
         </motion.div>
@@ -85,9 +99,7 @@ export function QuickLinks() {
           viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
         >
-          {publications.map((publication) => {
-            const Icon = publication.icon;
-            return (
+          {displayPublications.map((publication) => (
               <motion.div
                 key={publication.href}
                 variants={itemVariants}
@@ -110,7 +122,7 @@ export function QuickLinks() {
                   {/* Content */}
                   <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
                     <div className="inline-flex items-center justify-center w-9 h-9 bg-secondary rounded-lg mb-2">
-                      <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                      <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
                     </div>
                     <h3 className="font-serif font-bold text-base sm:text-lg text-white mb-1 group-hover:text-secondary transition-colors">
                       {publication.title}
@@ -128,8 +140,7 @@ export function QuickLinks() {
                   </div>
                 </Link>
               </motion.div>
-            );
-          })}
+            ))}
         </motion.div>
       </Container>
     </section>

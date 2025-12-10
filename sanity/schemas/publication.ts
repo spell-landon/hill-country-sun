@@ -35,6 +35,29 @@ export default defineType({
       rows: 3,
     }),
     defineField({
+      name: "shortDescription",
+      title: "Short Description",
+      type: "text",
+      rows: 2,
+      description: "Brief description for home page cards",
+    }),
+    defineField({
+      name: "cardImage",
+      title: "Card Image",
+      type: "image",
+      options: {
+        hotspot: true,
+      },
+      description: "Image displayed on home page publication cards",
+      fields: [
+        defineField({
+          name: "alt",
+          title: "Alt Text",
+          type: "string",
+        }),
+      ],
+    }),
+    defineField({
       name: "heroImage",
       title: "Hero Image",
       type: "image",

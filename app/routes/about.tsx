@@ -6,10 +6,13 @@ import { Container } from "~/components/ui/Container";
 import { Button } from "~/components/ui/Button";
 import { CopyEmail } from "~/components/ui/CopyEmail";
 import { Mail, Award, Users, Newspaper } from "lucide-react";
-import { getAboutPage, urlFor } from "~/lib/sanity.server";
+import { getAboutPage, getTeamMembers, urlFor } from "~/lib/sanity.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const aboutPage = await getAboutPage();
+  const [aboutPage, teamMembers] = await Promise.all([
+    getAboutPage(),
+    getTeamMembers(),
+  ]);
 
   if (!aboutPage) {
     // Return fallback data if no About page exists in Sanity yet
@@ -18,6 +21,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       fallback: true,
     });
   }
+
+  // Prefer standalone teamMember documents, fall back to aboutPage.teamMembers
+  const transformedTeamMembers = teamMembers.length > 0
+    ? teamMembers.map((member) => ({
+        name: member.name,
+        role: member.role,
+        email: member.email,
+        image: member.image ? urlFor(member.image).width(400).url() : "",
+        bio: member.bio,
+      }))
+    : aboutPage.teamMembers?.map((member) => ({
+        name: member.name,
+        role: member.role,
+        email: member.email,
+        image: member.image ? urlFor(member.image).width(400).url() : "",
+        bio: member.bio,
+      })) || [];
 
   // Transform data for component
   const transformedData = {
@@ -31,13 +51,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     foundedYear: aboutPage.foundedYear,
     teamTitle: aboutPage.teamTitle,
     teamSubtitle: aboutPage.teamSubtitle,
-    teamMembers: aboutPage.teamMembers?.map((member) => ({
-      name: member.name,
-      role: member.role,
-      email: member.email,
-      image: member.image ? urlFor(member.image).width(400).url() : "",
-      bio: member.bio,
-    })) || [],
+    teamMembers: transformedTeamMembers,
     stats: aboutPage.stats || [],
   };
 

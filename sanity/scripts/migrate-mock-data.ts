@@ -532,6 +532,113 @@ async function migrateAboutPage(): Promise<void> {
 }
 
 // ============================================================================
+// Home Page Data
+// ============================================================================
+
+const homePageData = {
+  heroTagline: "Your Hill Country Connection",
+  heroHeading: "Stories, Events & Life in the Texas Hill Country",
+  heroDescription: "Covering Wimberley and the River Region since 1990. Discover local news, upcoming events, and the best of Hill Country living.",
+  heroBackgroundImageUrl: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80",
+  heroCtaPrimaryText: "Read Latest Issue",
+  heroCtaSecondaryText: "Explore Articles",
+  publicationsSectionTitle: "Explore Our Publications",
+  publicationsSectionSubtitle: "In-depth resources to help you make the most of the Hill Country.",
+};
+
+async function migrateHomePage(): Promise<void> {
+  console.log("\n🏠 Migrating Home Page...");
+
+  // Check if already exists
+  const existing = await client.fetch(`*[_type == "homePage"][0]._id`);
+  if (existing) {
+    console.log(`  ⏭️  Skipping (exists): Home Page`);
+    return;
+  }
+
+  // Upload hero background image
+  const heroBackgroundImage = await uploadImageFromUrl(
+    homePageData.heroBackgroundImageUrl,
+    "home-hero-background.jpg"
+  );
+
+  const doc = {
+    _id: "homePage",
+    _type: "homePage",
+    heroTagline: homePageData.heroTagline,
+    heroHeading: homePageData.heroHeading,
+    heroDescription: homePageData.heroDescription,
+    heroBackgroundImage: heroBackgroundImage ? { ...heroBackgroundImage, alt: "Texas Hill Country landscape" } : undefined,
+    heroCtaPrimaryText: homePageData.heroCtaPrimaryText,
+    heroCtaSecondaryText: homePageData.heroCtaSecondaryText,
+    publicationsSectionTitle: homePageData.publicationsSectionTitle,
+    publicationsSectionSubtitle: homePageData.publicationsSectionSubtitle,
+  };
+
+  const result = await client.createOrReplace(doc);
+  console.log(`  ✅ Created: Home Page (${result._id})`);
+}
+
+// ============================================================================
+// Team Members Data
+// ============================================================================
+
+const teamMembersData = [
+  {
+    name: "Julie Harrington",
+    role: "Publisher",
+    email: "julie@hillcountrysun.com",
+    imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
+    bio: "Julie has been at the helm of the Hill Country Sun for over 15 years, bringing her passion for local journalism and community connection to every issue.",
+    order: 1,
+  },
+  {
+    name: "Melissa Ball",
+    role: "Editor",
+    email: "melissa@hillcountrysun.com",
+    imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80",
+    bio: "Melissa oversees all editorial content, ensuring each story captures the essence of Hill Country life while maintaining the highest standards of journalism.",
+    order: 2,
+  },
+];
+
+async function migrateTeamMembers(): Promise<void> {
+  console.log("\n👥 Migrating Team Members...");
+
+  for (const member of teamMembersData) {
+    const slug = slugify(member.name);
+
+    // Check if already exists (by name since teamMember doesn't have slug)
+    const existing = await client.fetch(`*[_type == "teamMember" && name == $name][0]._id`, { name: member.name });
+    if (existing) {
+      console.log(`  ⏭️  Skipping (exists): ${member.name}`);
+      continue;
+    }
+
+    console.log(`  👤 Processing: ${member.name}`);
+
+    // Upload member image
+    const memberImage = await uploadImageFromUrl(
+      member.imageUrl,
+      `team-member-${slug}.jpg`
+    );
+
+    const doc = {
+      _type: "teamMember",
+      name: member.name,
+      role: member.role,
+      email: member.email,
+      image: memberImage,
+      bio: member.bio,
+      order: member.order,
+    };
+
+    const result = await client.create(doc);
+    console.log(`  ✅ Created: ${member.name} (${result._id})`);
+  }
+}
+
+// ============================================================================
 // Contact Page Data
 // ============================================================================
 
@@ -736,6 +843,8 @@ async function main() {
     await migrateIssues();
     await migrateEvents();
     await migrateAboutPage();
+    await migrateHomePage();
+    await migrateTeamMembers();
     await migrateContactPage();
     await migrateSiteSettings();
     await migrateLegalPages();
@@ -749,6 +858,8 @@ async function main() {
     console.log(`  - Issues: ${mockIssues.length}`);
     console.log(`  - Events: ${mockEvents.length}`);
     console.log(`  - About Page: 1`);
+    console.log(`  - Home Page: 1`);
+    console.log(`  - Team Members: ${teamMembersData.length}`);
     console.log(`  - Contact Page: 1`);
     console.log(`  - Site Settings: 1`);
     console.log(`  - Legal Pages: ${legalPagesData.length}`);

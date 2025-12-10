@@ -96,15 +96,17 @@ export default defineType({
       author: 'author.name',
       media: 'mainImage',
       publishedAt: 'publishedAt',
+      publicationName: 'publication.name',
     },
     prepare(selection) {
-      const { author, publishedAt } = selection;
+      const { author, publishedAt, publicationName } = selection;
       const date = publishedAt
         ? new Date(publishedAt).toLocaleDateString()
         : 'Draft';
+      const parts = [author || 'Unknown', publicationName, date].filter(Boolean);
       return {
         ...selection,
-        subtitle: `${author || 'Unknown'} • ${date}`,
+        subtitle: parts.join(' • '),
       };
     },
   },

@@ -4,11 +4,31 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "~/components/ui/Button";
 import { Container } from "~/components/ui/Container";
 
-interface HeroProps {
-  currentIssueSlug?: string;
+interface HeroData {
+  tagline?: string;
+  heading?: string;
+  description?: string;
+  backgroundImage?: string;
+  ctaPrimaryText?: string;
+  ctaSecondaryText?: string;
 }
 
-export function Hero({ currentIssueSlug }: HeroProps) {
+interface HeroProps {
+  currentIssueSlug?: string;
+  heroData?: HeroData | null;
+}
+
+// Default values for fallback
+const defaults = {
+  tagline: "Your Hill Country Connection",
+  heading: "Stories, Events & Life in the Texas Hill Country",
+  description: "Covering Wimberley and the River Region since 1990. Discover local news, upcoming events, and the best of Hill Country living.",
+  backgroundImage: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80",
+  ctaPrimaryText: "Read Latest Issue",
+  ctaSecondaryText: "Explore Articles",
+};
+
+export function Hero({ currentIssueSlug, heroData }: HeroProps) {
   const shouldReduceMotion = useReducedMotion();
 
   const fadeInUp = {
@@ -36,7 +56,7 @@ export function Hero({ currentIssueSlug }: HeroProps) {
         transition={{ duration: 1.5, ease: "easeOut" }}
       >
         <img
-          src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600&q=80"
+          src={heroData?.backgroundImage || defaults.backgroundImage}
           alt=""
           className="w-full h-full object-cover"
           aria-hidden="true"
@@ -59,7 +79,7 @@ export function Hero({ currentIssueSlug }: HeroProps) {
             variants={shouldReduceMotion ? {} : fadeInUp}
             transition={{ duration: 0.5 }}
           >
-            Your Hill Country Connection
+            {heroData?.tagline || defaults.tagline}
           </motion.p>
 
           {/* Main Heading */}
@@ -68,8 +88,7 @@ export function Hero({ currentIssueSlug }: HeroProps) {
             variants={shouldReduceMotion ? {} : fadeInUp}
             transition={{ duration: 0.5 }}
           >
-            Stories, Events & Life in the{" "}
-            <span className="text-secondary">Texas Hill Country</span>
+            {heroData?.heading || defaults.heading}
           </motion.h1>
 
           {/* Description */}
@@ -78,8 +97,7 @@ export function Hero({ currentIssueSlug }: HeroProps) {
             variants={shouldReduceMotion ? {} : fadeInUp}
             transition={{ duration: 0.5 }}
           >
-            Covering Wimberley and the River Region since 1990. Discover local news,
-            upcoming events, and the best of Hill Country living.
+            {heroData?.description || defaults.description}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -90,7 +108,7 @@ export function Hero({ currentIssueSlug }: HeroProps) {
           >
             {currentIssueSlug ? (
               <Button to={`/publications/hill-country-sun/issues/${currentIssueSlug}`} variant="secondary" size="md" className="w-full sm:w-auto">
-                Read Latest Issue
+                {heroData?.ctaPrimaryText || defaults.ctaPrimaryText}
               </Button>
             ) : (
               <Button to="/publications/hill-country-sun" variant="secondary" size="md" className="w-full sm:w-auto">
@@ -98,7 +116,7 @@ export function Hero({ currentIssueSlug }: HeroProps) {
               </Button>
             )}
             <Button to="/articles" variant="outline" size="md" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary">
-              Explore Articles
+              {heroData?.ctaSecondaryText || defaults.ctaSecondaryText}
             </Button>
           </motion.div>
         </motion.div>

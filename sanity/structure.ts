@@ -1,5 +1,5 @@
 import type { StructureBuilder } from 'sanity/structure';
-import { BookOpen, FileText, Users, Tag, Calendar, Map, Settings, Info, Mail, Scale } from 'lucide-react';
+import { BookOpen, FileText, Users, Tag, Calendar, Map, Settings, Info, Mail, Scale, Home, UserCircle } from 'lucide-react';
 
 export const structure = (S: StructureBuilder) =>
   S.list()
@@ -37,6 +37,12 @@ export const structure = (S: StructureBuilder) =>
         .icon(Users)
         .child(S.documentTypeList('author').title('Authors')),
 
+      // Team Members
+      S.listItem()
+        .title('Team Members')
+        .icon(UserCircle)
+        .child(S.documentTypeList('teamMember').title('Team Members')),
+
       // Categories
       S.listItem()
         .title('Categories')
@@ -59,6 +65,16 @@ export const structure = (S: StructureBuilder) =>
           S.list()
             .title('Pages')
             .items([
+              // Home Page (singleton)
+              S.listItem()
+                .title('Home Page')
+                .icon(Home)
+                .child(
+                  S.document()
+                    .schemaType('homePage')
+                    .documentId('homePage')
+                    .title('Home Page')
+                ),
               // About Page (singleton)
               S.listItem()
                 .title('About Page')

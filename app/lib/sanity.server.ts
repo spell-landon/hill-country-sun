@@ -112,6 +112,8 @@ export interface SanityPublication {
   shortName: string;
   slug: { current: string };
   description: string;
+  shortDescription?: string;
+  cardImage?: SanityImageSource & { alt?: string };
   heroImage: SanityImageSource & { alt?: string };
   logo?: SanityImageSource;
   sections?: {
@@ -245,6 +247,8 @@ export async function getPublications(): Promise<SanityPublication[]> {
       shortName,
       slug,
       description,
+      shortDescription,
+      cardImage,
       heroImage,
       logo,
       sections
@@ -553,4 +557,58 @@ export async function getPageBySlug(slug: string): Promise<SanityPage | null> {
       content
     }
   `, { slug });
+}
+
+// Home Page queries
+export interface SanityHomePage {
+  _id: string;
+  heroTagline: string;
+  heroHeading: string;
+  heroDescription: string;
+  heroBackgroundImage?: SanityImageSource;
+  heroCtaPrimaryText: string;
+  heroCtaSecondaryText: string;
+  publicationsSectionTitle: string;
+  publicationsSectionSubtitle: string;
+}
+
+export async function getHomePage(): Promise<SanityHomePage | null> {
+  return client.fetch(`
+    *[_type == "homePage"][0] {
+      _id,
+      heroTagline,
+      heroHeading,
+      heroDescription,
+      heroBackgroundImage,
+      heroCtaPrimaryText,
+      heroCtaSecondaryText,
+      publicationsSectionTitle,
+      publicationsSectionSubtitle
+    }
+  `);
+}
+
+// Team Member queries
+export interface SanityTeamMember {
+  _id: string;
+  name: string;
+  role: string;
+  email?: string;
+  image?: SanityImageSource;
+  bio?: string;
+  order: number;
+}
+
+export async function getTeamMembers(): Promise<SanityTeamMember[]> {
+  return client.fetch(`
+    *[_type == "teamMember"] | order(order asc, name asc) {
+      _id,
+      name,
+      role,
+      email,
+      image,
+      bio,
+      order
+    }
+  `);
 }
